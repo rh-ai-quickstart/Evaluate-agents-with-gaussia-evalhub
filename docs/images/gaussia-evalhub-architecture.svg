@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="520" viewBox="0 0 1180 520" role="img" aria-labelledby="title desc">
+  <title id="title">Gaussia and EvalHub agent evaluation architecture</title>
+  <desc id="desc">An agent transcript is submitted to EvalHub. EvalHub starts the Gaussia provider on OpenShift. The provider evaluates benchmarks, reports results to EvalHub, and logs metrics to MLflow.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#4d4d4d"/>
+    </marker>
+    <style>
+      .label { font: 600 18px Arial, sans-serif; fill: #1f2933; }
+      .small { font: 14px Arial, sans-serif; fill: #4b5563; }
+      .box { fill: #ffffff; stroke: #4d4d4d; stroke-width: 2; rx: 10; }
+      .platform { fill: #f5f7fa; stroke: #b8c2cc; stroke-width: 2; rx: 16; }
+      .source { fill: #e6f4ff; stroke: #1d4ed8; }
+      .job { fill: #fff7ed; stroke: #c2410c; }
+      .provider { fill: #ecfdf5; stroke: #047857; }
+      .metrics { fill: #fdf2f8; stroke: #be185d; }
+      .line { stroke: #4d4d4d; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="30" y="35" width="1120" height="420" class="platform"/>
+  <text x="60" y="75" class="label">Red Hat OpenShift AI quickstart runtime</text>
+  <text x="60" y="100" class="small">Namespace-scoped smoke or submit job using Gaussia, EvalHub, and MLflow configuration</text>
+
+  <rect x="75" y="165" width="190" height="115" class="box source"/>
+  <text x="105" y="205" class="label">Agent transcript</text>
+  <text x="105" y="233" class="small">dataset + metadata</text>
+  <text x="105" y="255" class="small">short or long fixture</text>
+
+  <rect x="330" y="165" width="190" height="115" class="box job"/>
+  <text x="382" y="205" class="label">EvalHub</text>
+  <text x="365" y="233" class="small">job orchestration</text>
+  <text x="365" y="255" class="small">benchmark fan-out</text>
+
+  <rect x="585" y="145" width="225" height="155" class="box provider"/>
+  <text x="630" y="185" class="label">Gaussia provider</text>
+  <text x="620" y="213" class="small">python -m gaussia</text>
+  <text x="620" y="235" class="small">.integrations.evalhub</text>
+  <text x="620" y="257" class="small">humanity, context,</text>
+  <text x="620" y="279" class="small">conversation, bias, toxicity</text>
+
+  <rect x="875" y="120" width="200" height="100" class="box metrics"/>
+  <text x="945" y="160" class="label">MLflow</text>
+  <text x="915" y="188" class="small">metrics and runs</text>
+
+  <rect x="875" y="270" width="200" height="100" class="box job"/>
+  <text x="935" y="310" class="label">EvalHub</text>
+  <text x="910" y="338" class="small">job results and status</text>
+
+  <path d="M265 222 L330 222" class="line"/>
+  <path d="M520 222 L585 222" class="line"/>
+  <path d="M810 196 L875 170" class="line"/>
+  <path d="M810 252 L875 320" class="line"/>
+
+  <text x="285" y="205" class="small">submit</text>
+  <text x="536" y="205" class="small">start job</text>
+  <text x="825" y="165" class="small">log</text>
+  <text x="825" y="305" class="small">report</text>
+
+  <rect x="75" y="350" width="1000" height="60" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
+  <text x="105" y="385" class="small">Optional source path: Alquimia Runtime can emit events to a bridge that creates the same EvalHub job. The provider remains reusable and runtime agnostic.</text>
+</svg>

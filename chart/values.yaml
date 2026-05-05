@@ -1,0 +1,47 @@
+mode: smoke
+
+image:
+  repository: registry.access.redhat.com/ubi9/python-312
+  tag: latest
+  pullPolicy: IfNotPresent
+
+packageSpec: "gaussia[evalhub]"
+evalhubSdkSpec: "eval-hub-sdk[client]==0.1.5"
+
+quickstart:
+  fixture: long
+  benchmarks: humanity
+  uniqueRun: false
+  runSuffix: ""
+
+evalhub:
+  baseUrl: "http://evalhub.example.com"
+  authToken: ""
+  existingSecret: ""
+  authTokenKey: "EVALHUB_AUTH_TOKEN"
+  tenant: "default"
+  insecure: "false"
+  experimentName: "gaussia-agent-evaluation"
+
+evaluatedModel:
+  name: "support-agent-demo-v1"
+  url: "https://example.invalid/models/support-agent-demo-v1"
+
+serviceAccount:
+  create: true
+  name: ""
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+
+extraEnv: {}
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
