@@ -8,7 +8,6 @@ Use this AI quickstart to measure agent conversations with Gaussia benchmarks, E
   - [See it in action](#see-it-in-action)
   - [Architecture diagrams](#architecture-diagrams)
 - [Requirements](#requirements)
-  - [Minimum hardware requirements](#minimum-hardware-requirements)
   - [Minimum software requirements](#minimum-software-requirements)
   - [Required user permissions](#required-user-permissions)
 - [Deploy](#deploy)
@@ -73,22 +72,6 @@ When connected to EvalHub and MLflow, the same dataset creates one EvalHub job, 
 4. The provider evaluates the dataset, reports results to EvalHub, and logs metrics, datasets, sources, and model metadata to MLflow.
 
 ## Requirements
-
-### Minimum hardware requirements
-
-**Local smoke test:**
-
-- CPU: 2 vCPU.
-- Memory: 4 GiB.
-- Storage: 2 GiB for Python dependencies and temporary artifacts.
-- GPU: not required for the default `humanity` benchmark.
-
-**OpenShift smoke or submit job:**
-
-- CPU: 2 vCPU request, 4 vCPU limit.
-- Memory: 4 GiB request, 8 GiB limit.
-- Storage: 5 GiB ephemeral storage.
-- GPU: not required unless your selected judge, guardian, or toxicity configuration uses an on-cluster model that requires GPU acceleration.
 
 ### Minimum software requirements
 
