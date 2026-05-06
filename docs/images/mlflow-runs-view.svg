@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="560" viewBox="0 0 1180 560" role="img" aria-labelledby="title desc">
+  <title id="title">Example MLflow runs view for Gaussia benchmark metrics</title>
+  <desc id="desc">An MLflow-style run table shows Gaussia benchmark runs with dataset, source, evaluated model, and primary metric columns populated.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; }
+      .header { fill: #111827; }
+      .title { font: 700 24px Arial, sans-serif; fill: #111827; }
+      .text { font: 15px Arial, sans-serif; fill: #374151; }
+      .muted { font: 13px Arial, sans-serif; fill: #64748b; }
+      .thead { font: 700 14px Arial, sans-serif; fill: #f8fafc; }
+      .cell { font: 14px Arial, sans-serif; fill: #1f2937; }
+      .metric { font: 700 14px Arial, sans-serif; fill: #047857; }
+      .row { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1; }
+      .dot1 { fill: #f59e0b; }
+      .dot2 { fill: #64748b; }
+      .dot3 { fill: #2563eb; }
+      .dot4 { fill: #ef4444; }
+      .dot5 { fill: #22c55e; }
+    </style>
+  </defs>
+  <rect width="1180" height="560" class="bg"/>
+  <text x="48" y="56" class="title">MLflow experiment: gaussia-agent-evaluation</text>
+  <text x="48" y="86" class="text">Benchmark runs include dataset, source, evaluated model, and primary metric metadata.</text>
+
+  <rect x="48" y="120" width="1084" height="360" class="panel"/>
+  <rect x="48" y="120" width="1084" height="52" class="header" rx="12"/>
+  <text x="76" y="153" class="thead">Run name</text>
+  <text x="360" y="153" class="thead">Dataset</text>
+  <text x="630" y="153" class="thead">Source</text>
+  <text x="820" y="153" class="thead">Model</text>
+  <text x="1015" y="153" class="thead">Metric</text>
+
+  <rect x="64" y="188" width="1052" height="48" class="row"/>
+  <circle cx="84" cy="212" r="9" class="dot1"/>
+  <text x="104" y="218" class="cell">humanity-support-agent-long</text>
+  <text x="360" y="218" class="cell">gaussia-support-agent-long</text>
+  <text x="630" y="218" class="cell">gaussia.integrations.evalhub</text>
+  <text x="820" y="218" class="cell">support-agent-demo-v1</text>
+  <text x="1015" y="218" class="metric">0.667</text>
+
+  <rect x="64" y="242" width="1052" height="48" class="row"/>
+  <circle cx="84" cy="266" r="9" class="dot2"/>
+  <text x="104" y="272" class="cell">context-support-agent-long</text>
+  <text x="360" y="272" class="cell">gaussia-support-agent-long</text>
+  <text x="630" y="272" class="cell">gaussia.integrations.evalhub</text>
+  <text x="820" y="272" class="cell">support-agent-demo-v1</text>
+  <text x="1015" y="272" class="metric">0.842</text>
+
+  <rect x="64" y="296" width="1052" height="48" class="row"/>
+  <circle cx="84" cy="320" r="9" class="dot3"/>
+  <text x="104" y="326" class="cell">conversational-support-agent-long</text>
+  <text x="360" y="326" class="cell">gaussia-support-agent-long</text>
+  <text x="630" y="326" class="cell">gaussia.integrations.evalhub</text>
+  <text x="820" y="326" class="cell">support-agent-demo-v1</text>
+  <text x="1015" y="326" class="metric">0.813</text>
+
+  <rect x="64" y="350" width="1052" height="48" class="row"/>
+  <circle cx="84" cy="374" r="9" class="dot4"/>
+  <text x="104" y="380" class="cell">bias-support-agent-long</text>
+  <text x="360" y="380" class="cell">gaussia-support-agent-long</text>
+  <text x="630" y="380" class="cell">gaussia.integrations.evalhub</text>
+  <text x="820" y="380" class="cell">support-agent-demo-v1</text>
+  <text x="1015" y="380" class="metric">0.091</text>
+
+  <rect x="64" y="404" width="1052" height="48" class="row"/>
+  <circle cx="84" cy="428" r="9" class="dot5"/>
+  <text x="104" y="434" class="cell">toxicity-support-agent-long</text>
+  <text x="360" y="434" class="cell">gaussia-support-agent-long</text>
+  <text x="630" y="434" class="cell">gaussia.integrations.evalhub</text>
+  <text x="820" y="434" class="cell">support-agent-demo-v1</text>
+  <text x="1015" y="434" class="metric">0.024</text>
+
+  <text x="48" y="520" class="muted">Example validation view. Actual MLflow layout can vary by deployment.</text>
+</svg>

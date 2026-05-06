@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="560" viewBox="0 0 1180 560" role="img" aria-labelledby="title desc">
+  <title id="title">Example EvalHub results view for a Gaussia agent evaluation</title>
+  <desc id="desc">A table shows one parent EvalHub job faning out into five Gaussia benchmark jobs: humanity, context, conversational, bias, and toxicity.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 12; }
+      .header { fill: #1f2937; }
+      .title { font: 700 24px Arial, sans-serif; fill: #111827; }
+      .text { font: 15px Arial, sans-serif; fill: #374151; }
+      .muted { font: 13px Arial, sans-serif; fill: #64748b; }
+      .thead { font: 700 14px Arial, sans-serif; fill: #f8fafc; }
+      .cell { font: 14px Arial, sans-serif; fill: #1f2937; }
+      .success { fill: #dcfce7; stroke: #16a34a; }
+      .running { fill: #dbeafe; stroke: #2563eb; }
+      .pillText { font: 700 12px Arial, sans-serif; fill: #1f2937; }
+      .row { fill: #ffffff; stroke: #e2e8f0; stroke-width: 1; }
+    </style>
+  </defs>
+  <rect width="1180" height="560" class="bg"/>
+  <text x="48" y="56" class="title">EvalHub job: support-agent-demo-v1</text>
+  <text x="48" y="86" class="text">One transcript submitted as a dataset, evaluated across five Gaussia benchmarks.</text>
+
+  <rect x="48" y="120" width="1084" height="360" class="panel"/>
+  <rect x="48" y="120" width="1084" height="52" class="header" rx="12"/>
+  <text x="76" y="153" class="thead">Benchmark job</text>
+  <text x="420" y="153" class="thead">Provider</text>
+  <text x="560" y="153" class="thead">Status</text>
+  <text x="700" y="153" class="thead">Dataset</text>
+  <text x="940" y="153" class="thead">Evaluated model</text>
+
+  <rect x="64" y="188" width="1052" height="48" class="row"/>
+  <text x="76" y="218" class="cell">humanity-support-agent-long</text>
+  <text x="420" y="218" class="cell">gaussia</text>
+  <rect x="560" y="199" width="88" height="26" class="success" rx="13"/>
+  <text x="579" y="217" class="pillText">FINISHED</text>
+  <text x="700" y="218" class="cell">support-agent-long-session</text>
+  <text x="940" y="218" class="cell">support-agent-demo-v1</text>
+
+  <rect x="64" y="242" width="1052" height="48" class="row"/>
+  <text x="76" y="272" class="cell">context-support-agent-long</text>
+  <text x="420" y="272" class="cell">gaussia</text>
+  <rect x="560" y="253" width="88" height="26" class="success" rx="13"/>
+  <text x="579" y="271" class="pillText">FINISHED</text>
+  <text x="700" y="272" class="cell">support-agent-long-session</text>
+  <text x="940" y="272" class="cell">support-agent-demo-v1</text>
+
+  <rect x="64" y="296" width="1052" height="48" class="row"/>
+  <text x="76" y="326" class="cell">conversational-support-agent-long</text>
+  <text x="420" y="326" class="cell">gaussia</text>
+  <rect x="560" y="307" width="88" height="26" class="success" rx="13"/>
+  <text x="579" y="325" class="pillText">FINISHED</text>
+  <text x="700" y="326" class="cell">support-agent-long-session</text>
+  <text x="940" y="326" class="cell">support-agent-demo-v1</text>
+
+  <rect x="64" y="350" width="1052" height="48" class="row"/>
+  <text x="76" y="380" class="cell">bias-support-agent-long</text>
+  <text x="420" y="380" class="cell">gaussia</text>
+  <rect x="560" y="361" width="88" height="26" class="success" rx="13"/>
+  <text x="579" y="379" class="pillText">FINISHED</text>
+  <text x="700" y="380" class="cell">support-agent-long-session</text>
+  <text x="940" y="380" class="cell">support-agent-demo-v1</text>
+
+  <rect x="64" y="404" width="1052" height="48" class="row"/>
+  <text x="76" y="434" class="cell">toxicity-support-agent-long</text>
+  <text x="420" y="434" class="cell">gaussia</text>
+  <rect x="560" y="415" width="88" height="26" class="running" rx="13"/>
+  <text x="582" y="433" class="pillText">RUNNING</text>
+  <text x="700" y="434" class="cell">support-agent-long-session</text>
+  <text x="940" y="434" class="cell">support-agent-demo-v1</text>
+
+  <text x="48" y="520" class="muted">Example validation view. Actual EvalHub layout can vary by deployment.</text>
+</svg>
