@@ -116,15 +116,8 @@ When connected to EvalHub and MLflow, the same dataset creates one EvalHub job, 
 Clone the repository:
 
 ```bash
-git clone https://github.com/rh-ai-quickstart/evaluate-agents-with-gaussia-evalhub.git
-cd evaluate-agents-with-gaussia-evalhub
-```
-
-If the repository has not been renamed yet, use the current temporary repository name:
-
-```bash
-git clone https://github.com/rh-ai-quickstart/First-line-support-with-Alquimia.git
-cd First-line-support-with-Alquimia
+git clone https://github.com/rh-ai-quickstart/Evaluate-agents-with-gaussian-evalhub.git
+cd Evaluate-agents-with-gaussian-evalhub
 ```
 
 ### Run the local smoke test
