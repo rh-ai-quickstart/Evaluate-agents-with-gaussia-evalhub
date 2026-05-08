@@ -13,19 +13,89 @@ quickstart:
   benchmarks: humanity
   uniqueRun: false
   runSuffix: ""
+  evalhubReadyTimeoutSeconds: "600"
+  mlflowReadyTimeoutSeconds: "600"
 
 evalhub:
-  baseUrl: "http://evalhub.example.com"
+  baseUrl: ""
   authToken: ""
   existingSecret: ""
   authTokenKey: "EVALHUB_AUTH_TOKEN"
-  tenant: "default"
-  insecure: "false"
+  tenant: ""
+  insecure: "true"
   experimentName: "gaussia-agent-evaluation"
 
 evaluatedModel:
   name: "support-agent-demo-v1"
   url: "https://example.invalid/models/support-agent-demo-v1"
+
+platform:
+  enabled: true
+  serviceAccountName: ""
+  mlflow:
+    enabled: true
+    name: "mlflow"
+    trackingUri: ""
+    workspace: ""
+    insecureSkipVerify: true
+    storage:
+      storageClassName: ""
+      size: 10Gi
+    route:
+      enabled: true
+  evalhub:
+    enabled: true
+    name: ""
+    image:
+      repository: docker.io/alquimiaai/eval-hub
+      tag: latest
+      pullPolicy: Always
+    route:
+      enabled: true
+    database:
+      url: "file:/tmp/evalhub.db?cache=shared"
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  provider:
+    enabled: true
+    id: gaussia
+    title: Gaussia
+    image:
+      repository: registry.access.redhat.com/ubi9/python-312
+      tag: latest
+      pullPolicy: IfNotPresent
+    packageSpec: "gaussia[evalhub]"
+    evalhubSdkSpec: "eval-hub-sdk[adapter]==0.1.5"
+    cacheRoot: /tmp/gaussia-cache
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 6Gi
+    judge:
+      model: ""
+      apiKey: ""
+      baseUrl: ""
+      temperature: "0.0"
+      useStructuredOutput: "true"
+      bosJsonClause: ""
+      eosJsonClause: ""
+    guardian:
+      model: ""
+      apiKey: ""
+      baseUrl: ""
+      temperature: "0.01"
+      logprobs: "false"
+    toxicity:
+      embeddingModel: "all-MiniLM-L6-v2"
+      statisticalMode: "frequentist"
 
 serviceAccount:
   create: true

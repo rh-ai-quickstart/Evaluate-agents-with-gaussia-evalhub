@@ -3,7 +3,11 @@ from __future__ import annotations
 import copy
 import json
 import os
+import ssl
 import sys
+import time
+import urllib.error
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -115,10 +119,15 @@ def submit_evalhub_job(fixture: dict[str, Any], benchmarks: list[str]) -> None:
         ),
     )
 
+    base_url = os.environ.get("EVALHUB_BASE_URL", "http://localhost:8080")
+    insecure = os.environ.get("EVALHUB_INSECURE", "false").lower() == "true"
+    wait_for_evalhub_ready(base_url, insecure)
+    wait_for_mlflow_ready(insecure)
+
     with SyncEvalHubClient(
-        base_url=os.environ.get("EVALHUB_BASE_URL", "http://localhost:8080"),
+        base_url=base_url,
         auth_token=os.environ.get("EVALHUB_AUTH_TOKEN"),
-        insecure=os.environ.get("EVALHUB_INSECURE", "false").lower() == "true",
+        insecure=insecure,
         tenant=os.environ.get("EVALHUB_TENANT", "default"),
     ) as client:
         job = client.jobs.submit(request)
@@ -132,6 +141,59 @@ def submit_evalhub_job(fixture: dict[str, Any], benchmarks: list[str]) -> None:
             "session_id": parameters["dataset"]["session_id"],
         }
     )
+
+
+def wait_for_evalhub_ready(base_url: str, insecure: bool) -> None:
+    timeout_seconds = int(os.environ.get("QUICKSTART_EVALHUB_READY_TIMEOUT_SECONDS", "600"))
+    if timeout_seconds <= 0:
+        return
+
+    health_url = f"{base_url.rstrip('/')}/api/v1/health"
+    deadline = time.monotonic() + timeout_seconds
+    context = ssl._create_unverified_context() if insecure and health_url.startswith("https://") else None
+    last_error = ""
+
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(health_url, timeout=5, context=context) as response:
+                if 200 <= response.status < 300:
+                    print_json({"status": "evalhub_ready", "health_url": health_url})
+                    return
+                last_error = f"HTTP {response.status}"
+        except (OSError, urllib.error.URLError) as exc:
+            last_error = str(exc)
+        print_json({"status": "waiting_for_evalhub", "health_url": health_url, "error": last_error})
+        time.sleep(10)
+
+    raise TimeoutError(f"EvalHub was not ready after {timeout_seconds} seconds: {last_error}")
+
+
+def wait_for_mlflow_ready(insecure: bool) -> None:
+    if os.environ.get("QUICKSTART_WAIT_FOR_MLFLOW", "false").lower() != "true":
+        return
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if not tracking_uri:
+        return
+
+    timeout_seconds = int(os.environ.get("QUICKSTART_MLFLOW_READY_TIMEOUT_SECONDS", "600"))
+    health_url = f"{tracking_uri.rstrip('/')}/health"
+    deadline = time.monotonic() + timeout_seconds
+    context = ssl._create_unverified_context() if insecure and health_url.startswith("https://") else None
+    last_error = ""
+
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(health_url, timeout=5, context=context) as response:
+                if 200 <= response.status < 300:
+                    print_json({"status": "mlflow_ready", "health_url": health_url})
+                    return
+                last_error = f"HTTP {response.status}"
+        except (OSError, urllib.error.URLError) as exc:
+            last_error = str(exc)
+        print_json({"status": "waiting_for_mlflow", "health_url": health_url, "error": last_error})
+        time.sleep(10)
+
+    raise TimeoutError(f"MLflow was not ready after {timeout_seconds} seconds: {last_error}")
 
 
 def load_fixture(path: str | Path) -> dict[str, Any]:

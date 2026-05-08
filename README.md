@@ -15,8 +15,10 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversatio
   - [Required user permissions](#required-user-permissions)
 - [Deploy](#deploy)
   - [Prerequisites](#prerequisites)
-  - [Quick start - OpenShift smoke job](#quick-start---openshift-smoke-job)
-  - [Submit a live EvalHub job on OpenShift](#submit-a-live-evalhub-job-on-openshift)
+  - [Quick Start - Self-contained OpenShift run](#quick-start---self-contained-openshift-run)
+  - [Run all benchmarks](#run-all-benchmarks)
+  - [Use existing EvalHub and MLflow](#use-existing-evalhub-and-mlflow)
+  - [OpenShift smoke job](#openshift-smoke-job)
   - [Local smoke test](#local-smoke-test)
   - [Validate results](#validate-results)
   - [Delete](#delete)
@@ -56,8 +58,8 @@ The primary flow is source-runtime agnostic. Any system that can produce `datase
 
 By completing this quickstart, you will:
 
-- Deploy an OpenShift Job that runs a Gaussia provider smoke test.
-- Submit a live EvalHub job for a deterministic agent transcript.
+- Deploy a namespace-scoped evaluation stack with MLflow, EvalHub, the Gaussia provider registration, and a quickstart Job.
+- Submit a live EvalHub job for a deterministic agent transcript without relying on a pre-existing EvalHub service.
 - Run three benchmarks for a short transcript and five benchmarks for a longer transcript.
 - Confirm EvalHub benchmark fan-out and MLflow metric tracking.
 - Understand how to connect an external source system, including Alquimia Runtime, to the same evaluation flow.
@@ -104,17 +106,15 @@ When connected to EvalHub and MLflow, the long transcript creates one EvalHub jo
 - Helm 3.x.
 - OpenShift CLI `oc`.
 - Red Hat OpenShift 4.18+.
-- Red Hat OpenShift AI 2.16+ when using OpenShift AI hosted MLflow or model-serving endpoints.
+- Red Hat OpenShift AI 2.16+ with the MLflow custom resource available.
 - A public release of `gaussia[evalhub]`.
-- EvalHub endpoint and token for live job submission.
-- MLflow tracking endpoint for persisted benchmark runs.
+- Optional judge and guardian API credentials for model-backed benchmarks.
 
 ### Required user permissions
 
 - Local smoke test: no cluster permissions.
-- EvalHub submit job: EvalHub token with permission to create jobs in the configured tenant.
-- OpenShift smoke job: namespace-level permission to create ConfigMaps, Secrets, Jobs, Pods, and ServiceAccounts.
-- Provider registration in a shared EvalHub installation may require platform administrator access, depending on how EvalHub is managed in your environment.
+- Self-contained OpenShift run: permission to create ConfigMaps, Jobs, Pods, Routes, RoleBindings, ServiceAccounts, Services, Deployments, and MLflow custom resources in the target namespace.
+- Existing-service mode: EvalHub token with permission to create jobs in the configured tenant.
 
 ## Deploy
 
@@ -127,72 +127,65 @@ git clone https://github.com/rh-ai-quickstart/Evaluate-agents-with-gaussian-eval
 cd Evaluate-agents-with-gaussian-evalhub
 ```
 
-For live EvalHub submission, confirm that EvalHub has a provider with:
-
-- provider id `gaussia`
-- command `python -m gaussia.integrations.evalhub.adapter`
-- an image or runtime environment that installs `gaussia[evalhub]`
-- access to any required `GAUSSIA_*` judge, guardian, toxicity, and `MLFLOW_*` settings
-
-### Quick Start - OpenShift smoke job
-
-Create a namespace and install the Helm chart in smoke mode:
+Create a namespace for the quickstart:
 
 ```bash
 export NAMESPACE="gaussia-evalhub-quickstart"
-
 oc new-project "${NAMESPACE}"
+```
 
+### Quick Start - Self-contained OpenShift run
+
+Install the quickstart stack and submit one live EvalHub job. This creates MLflow, EvalHub, the Gaussia provider registration, and the submit Job in the same namespace:
+
+```bash
 helm install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
-  --set mode=smoke \
+  --set mode=submit \
   --set quickstart.fixture=long \
-  --set quickstart.benchmarks=humanity
+  --set quickstart.benchmarks=humanity \
+  --set quickstart.uniqueRun=true
 ```
 
 Watch the job:
 
 ```bash
-oc logs job/gaussia-evalhub-smoke -n "${NAMESPACE}" -f
+oc logs job/gaussia-evalhub-submit -n "${NAMESPACE}" -f
 ```
 
-The smoke job does not call EvalHub or MLflow. It verifies that the Gaussia EvalHub adapter can load the fixture and produce benchmark results.
+The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, Gaussia provider execution, and MLflow run logging.
 
-### Submit a live EvalHub job on OpenShift
+### Run all benchmarks
 
-Configure EvalHub access:
+To run `context`, `conversational`, `bias`, and `toxicity`, provide judge and guardian settings. These values are passed to the provider registration created by the chart:
 
 ```bash
-export EVALHUB_BASE_URL="https://evalhub.example.com"
-export EVALHUB_AUTH_TOKEN="<token>"
-export EVALHUB_TENANT="default"
-export EVALHUB_INSECURE="false"
-export EVALHUB_EXPERIMENT_NAME="gaussia-agent-evaluation"
-export GAUSSIA_EVALUATED_MODEL_NAME="support-agent-demo-v1"
-export GAUSSIA_EVALUATED_MODEL_URL="https://example.invalid/models/support-agent-demo-v1"
+export GAUSSIA_JUDGE_MODEL="openai/gpt-oss-20b"
+export GAUSSIA_JUDGE_BASE_URL="https://api.groq.com/openai/v1"
+export GAUSSIA_JUDGE_API_KEY="<judge-api-key>"
+export GAUSSIA_GUARDIAN_MODEL="ibm-granite/granite-guardian-3.1-2b"
+export GAUSSIA_GUARDIAN_BASE_URL="<guardian-endpoint-url>"
+export GAUSSIA_GUARDIAN_API_KEY="<guardian-api-key>"
 ```
 
-Install in submit mode:
+Kubernetes Jobs are immutable, so uninstall the previous release before changing the Job mode or benchmark settings:
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm uninstall gaussia-evalhub --namespace "${NAMESPACE}"
+
+helm install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
   --set mode=submit \
   --set quickstart.fixture=long \
   --set quickstart.benchmarks=auto \
   --set quickstart.uniqueRun=true \
-  --set evalhub.baseUrl="${EVALHUB_BASE_URL}" \
-  --set evalhub.authToken="${EVALHUB_AUTH_TOKEN}" \
-  --set evalhub.tenant="${EVALHUB_TENANT}" \
-  --set evalhub.insecure="${EVALHUB_INSECURE}" \
-  --set evalhub.experimentName="${EVALHUB_EXPERIMENT_NAME}" \
-  --set evaluatedModel.name="${GAUSSIA_EVALUATED_MODEL_NAME}" \
-  --set evaluatedModel.url="${GAUSSIA_EVALUATED_MODEL_URL}"
+  --set-string platform.provider.judge.model="${GAUSSIA_JUDGE_MODEL}" \
+  --set-string platform.provider.judge.baseUrl="${GAUSSIA_JUDGE_BASE_URL}" \
+  --set-string platform.provider.judge.apiKey="${GAUSSIA_JUDGE_API_KEY}" \
+  --set-string platform.provider.guardian.model="${GAUSSIA_GUARDIAN_MODEL}" \
+  --set-string platform.provider.guardian.baseUrl="${GAUSSIA_GUARDIAN_BASE_URL}" \
+  --set-string platform.provider.guardian.apiKey="${GAUSSIA_GUARDIAN_API_KEY}"
 ```
-
-For production-style usage, create the secret separately and set `evalhub.existingSecret` instead of passing `evalhub.authToken` on the command line.
-
-To rerun the same mode with different values, uninstall the release first. Kubernetes Jobs are immutable after creation.
 
 Expected output includes:
 
@@ -208,6 +201,41 @@ Expected output includes:
     "toxicity"
   ]
 }
+```
+
+### Use existing EvalHub and MLflow
+
+If your platform team already provides EvalHub, MLflow, and a registered `gaussia` provider, disable the embedded platform and point the quickstart Job at that endpoint:
+
+```bash
+export EVALHUB_BASE_URL="https://evalhub.example.com"
+export EVALHUB_AUTH_TOKEN="<token>"
+export EVALHUB_TENANT="default"
+
+helm install gaussia-evalhub ./chart \
+  --namespace "${NAMESPACE}" \
+  --set platform.enabled=false \
+  --set mode=submit \
+  --set quickstart.fixture=long \
+  --set quickstart.benchmarks=auto \
+  --set quickstart.uniqueRun=true \
+  --set evalhub.baseUrl="${EVALHUB_BASE_URL}" \
+  --set evalhub.authToken="${EVALHUB_AUTH_TOKEN}" \
+  --set evalhub.tenant="${EVALHUB_TENANT}" \
+  --set evalhub.insecure=false
+```
+
+### OpenShift smoke job
+
+Use smoke mode when you only want to verify the Gaussia EvalHub adapter in OpenShift without creating an EvalHub job:
+
+```bash
+helm install gaussia-evalhub-smoke ./chart \
+  --namespace "${NAMESPACE}" \
+  --set platform.enabled=false \
+  --set mode=smoke \
+  --set quickstart.fixture=long \
+  --set quickstart.benchmarks=humanity
 ```
 
 ### Local smoke test
@@ -251,11 +279,11 @@ uv run \
 Use these checks to confirm the quickstart completed:
 
 ```bash
-oc get jobs,pods -n "${NAMESPACE}"
+oc get mlflow,deploy,svc,route,jobs,pods -n "${NAMESPACE}"
 oc logs job/gaussia-evalhub-submit -n "${NAMESPACE}"
 ```
 
-In EvalHub, confirm that the long fixture created one top-level job with five benchmark jobs.
+In EvalHub, confirm that the long fixture created one top-level job. With `quickstart.benchmarks=auto`, the long fixture creates five benchmark jobs.
 
 In MLflow, confirm that each benchmark run includes:
 
@@ -329,16 +357,16 @@ Use `--benchmarks humanity` for a no-credential smoke test.
 
 ### Provider registration
 
-EvalHub must know how to run the Gaussia provider before the live submit path can create executable benchmark jobs. Register the provider with the `gaussia` provider id and this adapter command:
+The Helm chart registers the Gaussia provider in EvalHub with provider id `gaussia` and this adapter command:
 
 ```bash
 python -m gaussia.integrations.evalhub.adapter
 ```
 
-The provider image should install:
+The embedded provider runtime uses a Python base image and installs these packages before running the adapter:
 
 ```bash
-uv add "gaussia[evalhub]"
+python -m pip install "gaussia[evalhub]" "eval-hub-sdk[adapter]==0.1.5"
 ```
 
 ### Model and run metadata
@@ -356,7 +384,7 @@ Judge, guardian, toxicity, and MLflow settings keep the `GAUSSIA_*` and `MLFLOW_
 
 ```text
 .
-├── chart/                 # Minimal Helm chart for smoke and EvalHub submit jobs
+├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
 ├── docs/                  # Integration notes and architecture images
 ├── quickstart/            # Local runners and public agent transcript fixtures
 └── README.md              # Red Hat AI quickstart guide

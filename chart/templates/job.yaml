@@ -41,14 +41,22 @@ spec:
               value: {{ .Values.quickstart.uniqueRun | quote }}
             - name: QUICKSTART_RUN_SUFFIX
               value: {{ .Values.quickstart.runSuffix | quote }}
+            - name: QUICKSTART_EVALHUB_READY_TIMEOUT_SECONDS
+              value: {{ .Values.quickstart.evalhubReadyTimeoutSeconds | quote }}
+            - name: QUICKSTART_WAIT_FOR_MLFLOW
+              value: {{ (and .Values.platform.enabled .Values.platform.mlflow.enabled) | quote }}
+            - name: QUICKSTART_MLFLOW_READY_TIMEOUT_SECONDS
+              value: {{ .Values.quickstart.mlflowReadyTimeoutSeconds | quote }}
             - name: EVALHUB_BASE_URL
-              value: {{ .Values.evalhub.baseUrl | quote }}
+              value: {{ include "gaussia-evalhub.evalhubBaseUrl" . | quote }}
             - name: EVALHUB_TENANT
-              value: {{ .Values.evalhub.tenant | quote }}
+              value: {{ include "gaussia-evalhub.evalhubTenant" . | quote }}
             - name: EVALHUB_INSECURE
               value: {{ .Values.evalhub.insecure | quote }}
             - name: EVALHUB_EXPERIMENT_NAME
               value: {{ .Values.evalhub.experimentName | quote }}
+            - name: MLFLOW_TRACKING_URI
+              value: {{ include "gaussia-evalhub.mlflowTrackingUri" . | quote }}
             - name: GAUSSIA_EVALUATED_MODEL_NAME
               value: {{ .Values.evaluatedModel.name | quote }}
             - name: GAUSSIA_EVALUATED_MODEL_URL

@@ -23,6 +23,40 @@
 {{- end -}}
 {{- end -}}
 
+{{- define "gaussia-evalhub.platformServiceAccountName" -}}
+{{- default (printf "%s-platform" (include "gaussia-evalhub.fullname" .)) .Values.platform.serviceAccountName -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.evalhubName" -}}
+{{- default (printf "%s-evalhub" (include "gaussia-evalhub.fullname" .)) .Values.platform.evalhub.name -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.mlflowName" -}}
+{{- default "mlflow" .Values.platform.mlflow.name -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.mlflowWorkspace" -}}
+{{- default .Release.Namespace .Values.platform.mlflow.workspace -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.mlflowTrackingUri" -}}
+{{- default (printf "https://%s.%s.svc:8443" (include "gaussia-evalhub.mlflowName" .) .Release.Namespace) .Values.platform.mlflow.trackingUri -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.evalhubBaseUrl" -}}
+{{- if .Values.evalhub.baseUrl -}}
+{{- .Values.evalhub.baseUrl -}}
+{{- else if and .Values.platform.enabled .Values.platform.evalhub.enabled -}}
+{{- printf "http://%s:8080" (include "gaussia-evalhub.evalhubName" .) -}}
+{{- else -}}
+{{- "http://evalhub.example.com" -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.evalhubTenant" -}}
+{{- default .Release.Namespace .Values.evalhub.tenant -}}
+{{- end -}}
+
 {{- define "gaussia-evalhub.labels" -}}
 app.kubernetes.io/name: {{ include "gaussia-evalhub.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
