@@ -39,7 +39,7 @@ from common import (
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_FIXTURE = REPO_ROOT / "quickstart" / "fixtures" / "agent_transcript_long.json"
+DEFAULT_FIXTURE = REPO_ROOT / "quickstart" / "fixtures" / "first-line-support.json"
 
 
 def parse_args() -> argparse.Namespace:
@@ -127,7 +127,7 @@ def build_job_submission_request(
     metadata = parameters["metadata"]
     return JobSubmissionRequest(
         name=build_request_name(metadata),
-        description="Gaussia evaluation for an AI agent transcript",
+        description="Gaussia evaluation for an AI agent conversation",
         tags=["gaussia", "evalhub", "agent-evaluation"],
         model=ModelConfig(
             name=evaluated_model_name(fixture),

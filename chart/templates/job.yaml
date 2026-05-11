@@ -33,7 +33,7 @@ spec:
             - name: EVALHUB_SDK_SPEC
               value: {{ .Values.evalhubSdkSpec | quote }}
             - name: QUICKSTART_FIXTURE_PATH
-              value: "/quickstart/agent_transcript_{{ .Values.quickstart.fixture }}.json"
+              value: "/quickstart/{{ .Values.quickstart.fixture }}.json"
             - name: QUICKSTART_BENCHMARKS
               value: {{ .Values.quickstart.benchmarks | quote }}
             - name: QUICKSTART_UNIQUE_RUN

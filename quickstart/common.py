@@ -9,10 +9,11 @@ from typing import Any
 
 
 ALWAYS_ENABLED_BENCHMARKS = ("humanity", "context", "conversational")
+GROUND_TRUTH_BENCHMARKS = ("agentic",)
 LONG_SESSION_BENCHMARKS = ("bias", "toxicity")
-SUPPORTED_BENCHMARKS = (*ALWAYS_ENABLED_BENCHMARKS, *LONG_SESSION_BENCHMARKS)
-DEFAULT_MODEL_NAME = "support-agent-demo-v1"
-DEFAULT_MODEL_URL = "https://example.invalid/models/support-agent-demo-v1"
+SUPPORTED_BENCHMARKS = (*ALWAYS_ENABLED_BENCHMARKS, *GROUND_TRUTH_BENCHMARKS, *LONG_SESSION_BENCHMARKS)
+DEFAULT_MODEL_NAME = "gaussia-quickstart-agent-demo-v1"
+DEFAULT_MODEL_URL = "https://example.invalid/models/gaussia-quickstart-agent-demo-v1"
 
 
 def load_quickstart_fixture(path: str | Path) -> dict[str, Any]:
@@ -39,6 +40,8 @@ def selected_benchmarks(raw_benchmarks: str, fixture: dict[str, Any]) -> list[st
     if raw_benchmarks == "auto":
         count = len(fixture["dataset"].get("conversation", []))
         selected = list(ALWAYS_ENABLED_BENCHMARKS)
+        if _has_ground_truth(fixture):
+            selected.extend(GROUND_TRUTH_BENCHMARKS)
         if count >= 5:
             selected.extend(LONG_SESSION_BENCHMARKS)
         return selected
@@ -52,6 +55,14 @@ def selected_benchmarks(raw_benchmarks: str, fixture: dict[str, Any]) -> list[st
     return benchmarks
 
 
+def _has_ground_truth(fixture: dict[str, Any]) -> bool:
+    conversation = fixture["dataset"].get("conversation", [])
+    return bool(conversation) and all(
+        isinstance(interaction, dict) and str(interaction.get("ground_truth_assistant", "")).strip()
+        for interaction in conversation
+    )
+
+
 def build_evalhub_parameters(
     fixture: dict[str, Any],
     *,
@@ -61,7 +72,7 @@ def build_evalhub_parameters(
     metadata = copy.deepcopy(fixture.get("metadata", {}))
     metadata.setdefault("assistant_id", dataset.get("assistant_id", ""))
     metadata.setdefault("session_id", dataset.get("session_id", ""))
-    metadata.setdefault("source", "gaussia.quickstart.agent-transcript.v1")
+    metadata.setdefault("source", "gaussia.quickstart.scenario-fixture.v1")
 
     if run_suffix:
         dataset["session_id"] = f"{dataset['session_id']}-{run_suffix}"

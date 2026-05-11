@@ -14,8 +14,9 @@ from typing import Any
 
 
 ALWAYS_ENABLED_BENCHMARKS = ("humanity", "context", "conversational")
+GROUND_TRUTH_BENCHMARKS = ("agentic",)
 LONG_SESSION_BENCHMARKS = ("bias", "toxicity")
-SUPPORTED_BENCHMARKS = (*ALWAYS_ENABLED_BENCHMARKS, *LONG_SESSION_BENCHMARKS)
+SUPPORTED_BENCHMARKS = (*ALWAYS_ENABLED_BENCHMARKS, *GROUND_TRUTH_BENCHMARKS, *LONG_SESSION_BENCHMARKS)
 
 
 def main() -> None:
@@ -41,7 +42,7 @@ def submit_evalhub_job(fixture: dict[str, Any], benchmarks: list[str]) -> None:
     metadata = parameters["metadata"]
     request = JobSubmissionRequest(
         name=request_name(metadata),
-        description="Gaussia evaluation for an AI agent transcript",
+        description="Gaussia evaluation for an AI agent conversation",
         tags=["gaussia", "evalhub", "agent-evaluation"],
         model=ModelConfig(name=model_name(fixture), url=model_url(fixture)),
         benchmarks=[
@@ -147,6 +148,8 @@ def load_fixture(path: str | Path) -> dict[str, Any]:
 def select_benchmarks(raw: str, fixture: dict[str, Any]) -> list[str]:
     if raw == "auto":
         selected = list(ALWAYS_ENABLED_BENCHMARKS)
+        if has_ground_truth(fixture):
+            selected.extend(GROUND_TRUTH_BENCHMARKS)
         if len(fixture["dataset"].get("conversation", [])) >= 5:
             selected.extend(LONG_SESSION_BENCHMARKS)
         return selected
@@ -157,12 +160,20 @@ def select_benchmarks(raw: str, fixture: dict[str, Any]) -> list[str]:
     return benchmarks
 
 
+def has_ground_truth(fixture: dict[str, Any]) -> bool:
+    conversation = fixture["dataset"].get("conversation", [])
+    return bool(conversation) and all(
+        isinstance(interaction, dict) and str(interaction.get("ground_truth_assistant", "")).strip()
+        for interaction in conversation
+    )
+
+
 def build_parameters(fixture: dict[str, Any], run_suffix: str | None = None) -> dict[str, Any]:
     dataset = copy.deepcopy(fixture["dataset"])
     metadata = copy.deepcopy(fixture.get("metadata", {}))
     metadata.setdefault("assistant_id", dataset.get("assistant_id", ""))
     metadata.setdefault("session_id", dataset.get("session_id", ""))
-    metadata.setdefault("source", "gaussia.quickstart.agent-transcript.v1")
+    metadata.setdefault("source", "gaussia.quickstart.scenario-fixture.v1")
     if run_suffix:
         dataset["session_id"] = f"{dataset['session_id']}-{run_suffix}"
         metadata["session_id"] = dataset["session_id"]
@@ -177,7 +188,7 @@ def model_name(fixture: dict[str, Any]) -> str:
     return (
         os.environ.get("GAUSSIA_EVALUATED_MODEL_NAME")
         or metadata.get("evaluated_model_name")
-        or "support-agent-demo-v1"
+        or "gaussia-quickstart-agent-demo-v1"
     )
 
 
@@ -186,7 +197,7 @@ def model_url(fixture: dict[str, Any]) -> str:
     return (
         os.environ.get("GAUSSIA_EVALUATED_MODEL_URL")
         or metadata.get("evaluated_model_url")
-        or "https://example.invalid/models/support-agent-demo-v1"
+        or "https://example.invalid/models/gaussia-quickstart-agent-demo-v1"
     )
 
 

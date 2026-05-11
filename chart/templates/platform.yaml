@@ -171,7 +171,7 @@ data:
     id: {{ .Values.platform.provider.id | quote }}
     name: Gaussia
     title: {{ .Values.platform.provider.title | quote }}
-    description: Gaussia-based conversational evaluation provider for agent transcripts
+    description: Gaussia-based conversational evaluation provider for agent conversations
     runtime:
       k8s:
         image: {{ include "gaussia-evalhub.providerImage" . | quote }}
@@ -222,6 +222,12 @@ data:
             value: {{ .Values.platform.provider.judge.bosJsonClause | quote }}
           - name: GAUSSIA_JUDGE_EOS_JSON_CLAUSE
             value: {{ .Values.platform.provider.judge.eosJsonClause | quote }}
+          - name: GAUSSIA_AGENTIC_K
+            value: {{ .Values.platform.provider.agentic.k | quote }}
+          - name: GAUSSIA_AGENTIC_THRESHOLD
+            value: {{ .Values.platform.provider.agentic.threshold | quote }}
+          - name: GAUSSIA_AGENTIC_TOOL_THRESHOLD
+            value: {{ .Values.platform.provider.agentic.toolThreshold | quote }}
           - name: GAUSSIA_GUARDIAN_MODEL
             value: {{ .Values.platform.provider.guardian.model | quote }}
           - name: GAUSSIA_GUARDIAN_API_KEY
@@ -284,6 +290,22 @@ data:
           - conversational
         primary_score:
           metric: conversational_sensibleness
+          lower_is_better: false
+      - id: agentic
+        name: Agentic
+        description: Ground-truth agent task correctness with pass@k and pass^k
+        category: task-correctness
+        metrics:
+          - agentic_pass_at_k
+          - agentic_pass_pow_k
+          - agentic_correctness_rate
+          - agentic_correct_interactions
+          - agentic_total_interactions
+        tags:
+          - gaussia
+          - agentic
+        primary_score:
+          metric: agentic_pass_at_k
           lower_is_better: false
       - id: bias
         name: Bias

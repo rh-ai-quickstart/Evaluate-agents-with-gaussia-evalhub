@@ -10,7 +10,7 @@ packageSpec: "gaussia[evalhub]"
 evalhubSdkSpec: "eval-hub-sdk[client]==0.1.5"
 
 quickstart:
-  fixture: long
+  fixture: first-line-support
   benchmarks: humanity
   uniqueRun: false
   runSuffix: ""
@@ -28,8 +28,8 @@ evalhub:
   experimentName: "gaussia-agent-evaluation"
 
 evaluatedModel:
-  name: "support-agent-demo-v1"
-  url: "https://example.invalid/models/support-agent-demo-v1"
+  name: ""
+  url: ""
 
 platform:
   enabled: true
@@ -95,6 +95,10 @@ platform:
       useStructuredOutput: "true"
       bosJsonClause: ""
       eosJsonClause: ""
+    agentic:
+      k: "3"
+      threshold: "0.7"
+      toolThreshold: "1.0"
     guardian:
       model: ""
       apiKey: ""

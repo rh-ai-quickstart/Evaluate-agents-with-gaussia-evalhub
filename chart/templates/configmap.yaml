@@ -7,7 +7,9 @@ metadata:
 data:
   run_quickstart.py: |-
 {{ .Files.Get "files/run_quickstart.py" | indent 4 }}
-  agent_transcript_short.json: |-
-{{ .Files.Get "files/agent_transcript_short.json" | indent 4 }}
-  agent_transcript_long.json: |-
-{{ .Files.Get "files/agent_transcript_long.json" | indent 4 }}
+  first-line-support.json: |-
+{{ .Files.Get "files/first-line-support.json" | indent 4 }}
+  retail.json: |-
+{{ .Files.Get "files/retail.json" | indent 4 }}
+  root-cause-analysis.json: |-
+{{ .Files.Get "files/root-cause-analysis.json" | indent 4 }}
