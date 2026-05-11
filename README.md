@@ -159,6 +159,20 @@ git clone https://github.com/rh-ai-quickstart/Evaluate-agents-with-gaussia-evalh
 cd Evaluate-agents-with-gaussia-evalhub
 ```
 
+Create a local environment file for EvalHub, MLflow, judge, and guardian settings:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your service URLs and credentials. The local submitter loads `.env` automatically. For Helm commands, load it into your shell first:
+
+```bash
+set -a
+source .env
+set +a
+```
+
 Create a namespace for the quickstart:
 
 ```bash
@@ -260,18 +274,12 @@ helm uninstall gaussia-evalhub-run-001 --namespace "${NAMESPACE}"
 
 ### Run all benchmarks
 
-To run `context`, `conversational`, `agentic`, `bias`, and `toxicity`, provide judge and guardian settings. These values are passed to the provider registration created by the chart:
+To run `context`, `conversational`, `agentic`, `bias`, and `toxicity`, fill the judge and guardian settings in `.env` and load them into your shell:
 
 ```bash
-export GAUSSIA_JUDGE_MODEL="<judge-model-name>"
-export GAUSSIA_JUDGE_BASE_URL="<judge-api-base-url>"
-export GAUSSIA_JUDGE_API_KEY="<judge-api-key>"
-export GAUSSIA_GUARDIAN_MODEL="<guardian-model-name>"
-export GAUSSIA_GUARDIAN_BASE_URL="<guardian-api-base-url>"
-export GAUSSIA_GUARDIAN_API_KEY="<guardian-api-key>"
-export GAUSSIA_AGENTIC_K="3"
-export GAUSSIA_AGENTIC_THRESHOLD="0.7"
-export GAUSSIA_AGENTIC_TOOL_THRESHOLD="1.0"
+set -a
+source .env
+set +a
 ```
 
 If the platform release is already installed, update only the provider registration with those settings:
@@ -323,13 +331,9 @@ Expected output includes:
 
 ### Use existing EvalHub and MLflow
 
-If your platform team already provides EvalHub, MLflow, and a registered `gaussia` provider, disable the embedded platform and point the quickstart Job at that endpoint:
+If your platform team already provides EvalHub, MLflow, and a registered `gaussia` provider, configure `EVALHUB_BASE_URL`, `EVALHUB_AUTH_TOKEN`, and `EVALHUB_TENANT` in `.env`, then disable the embedded platform and point the quickstart Job at that endpoint:
 
 ```bash
-export EVALHUB_BASE_URL="https://evalhub.example.com"
-export EVALHUB_AUTH_TOKEN="<token>"
-export EVALHUB_TENANT="default"
-
 helm install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
@@ -474,6 +478,7 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 
 ```text
 .
+├── .env.example           # Local environment template for EvalHub, MLflow, judge, and guardian settings
 ├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
 ├── docs/                  # Architecture and results images
 ├── quickstart/            # EvalHub submitter and public scenario fixtures

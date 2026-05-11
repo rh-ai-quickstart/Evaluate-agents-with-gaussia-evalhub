@@ -32,6 +32,7 @@ from common import (
     evaluated_model_name,
     evaluated_model_url,
     generated_run_suffix,
+    load_env_files,
     load_quickstart_fixture,
     print_json,
     selected_benchmarks,
@@ -73,6 +74,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    load_env_files(REPO_ROOT / ".env", REPO_ROOT / "quickstart" / ".env")
     args = parse_args()
     fixture = load_quickstart_fixture(args.fixture)
     try:
