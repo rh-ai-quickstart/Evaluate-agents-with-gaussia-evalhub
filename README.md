@@ -119,10 +119,6 @@ The [Gaussia] provider then reports benchmark results back through EvalHub:
 
 With `quickstart.benchmarks=auto`, the long transcript creates one EvalHub job, five benchmark jobs, and one MLflow run per benchmark.
 
-![Example EvalHub results view showing five benchmark jobs for one evaluated agent transcript](docs/images/evalhub-results-view.svg)
-
-![Example MLflow runs view showing dataset, source, model, and benchmark metrics populated for evaluations](docs/images/mlflow-runs-view.svg)
-
 ### Architecture diagrams
 
 ![Architecture diagram showing an agent transcript sent to EvalHub, evaluated by the provider, and logged to MLflow](docs/images/gaussia-evalhub-architecture.svg)
