@@ -19,68 +19,9 @@ SUPPORTED_BENCHMARKS = (*ALWAYS_ENABLED_BENCHMARKS, *LONG_SESSION_BENCHMARKS)
 
 
 def main() -> None:
-    mode = os.environ.get("QUICKSTART_MODE", "smoke")
     fixture = load_fixture(os.environ["QUICKSTART_FIXTURE_PATH"])
     benchmarks = select_benchmarks(os.environ.get("QUICKSTART_BENCHMARKS", "humanity"), fixture)
-
-    if mode == "smoke":
-        run_smoke(fixture, benchmarks)
-        return
-    if mode == "submit":
-        submit_evalhub_job(fixture, benchmarks)
-        return
-    raise SystemExit(f"Unsupported QUICKSTART_MODE: {mode}")
-
-
-def run_smoke(fixture: dict[str, Any], benchmarks: list[str]) -> None:
-    from evalhub.adapter import JobCallbacks, JobResults, JobSpec, JobStatusUpdate, OCIArtifactResult
-    from gaussia.integrations.evalhub.adapter import GaussiaEvalHubAdapter
-
-    class ConsoleCallbacks(JobCallbacks):
-        def report_status(self, update: JobStatusUpdate) -> None:
-            phase = getattr(update.phase, "value", update.phase)
-            status = getattr(update.status, "value", update.status)
-            message = update.message.message if update.message else ""
-            print(f"[status] {status}/{phase}: {message}")
-
-        def create_oci_artifact(self, spec: Any) -> OCIArtifactResult:
-            print(f"[artifact] would persist OCI artifact from {spec.files_path}")
-            return OCIArtifactResult(
-                digest="sha256:openshift-smoke",
-                reference="local/gaussia-evalhub-smoke:latest@sha256:openshift-smoke",
-            )
-
-        def report_results(self, results: JobResults) -> None:
-            print_json(results.model_dump(mode="json"))
-
-    adapter = object.__new__(GaussiaEvalHubAdapter)
-    callbacks = ConsoleCallbacks()
-    parameters = build_parameters(fixture)
-    print_json(
-        {
-            "mode": "smoke",
-            "benchmarks": benchmarks,
-            "interactions": len(parameters["dataset"].get("conversation", [])),
-            "model_name": model_name(fixture),
-        }
-    )
-
-    for index, benchmark_id in enumerate(benchmarks):
-        spec = JobSpec.model_validate(
-            {
-                "id": f"quickstart-{parameters['metadata'].get('control_id', 'openshift')}-{benchmark_id}",
-                "provider_id": "gaussia",
-                "benchmark_id": benchmark_id,
-                "benchmark_index": index,
-                "model": {
-                    "name": model_name(fixture),
-                    "url": model_url(fixture),
-                },
-                "parameters": parameters,
-                "callback_url": "http://localhost:8080/callbacks",
-            }
-        )
-        callbacks.report_results(adapter.run_benchmark_job(spec, callbacks))
+    submit_evalhub_job(fixture, benchmarks)
 
 
 def submit_evalhub_job(fixture: dict[str, Any], benchmarks: list[str]) -> None:
@@ -114,7 +55,6 @@ def submit_evalhub_job(fixture: dict[str, Any], benchmarks: list[str]) -> None:
                 ExperimentTag(key="session_id", value=str(metadata.get("session_id", ""))),
                 ExperimentTag(key="stream_id", value=str(metadata.get("stream_id", ""))),
                 ExperimentTag(key="control_id", value=str(metadata.get("control_id", ""))),
-                ExperimentTag(key="source", value=str(metadata.get("source", ""))),
             ],
         ),
     )

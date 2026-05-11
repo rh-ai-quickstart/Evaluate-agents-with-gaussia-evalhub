@@ -1,7 +1,8 @@
+{{- if .Values.job.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "gaussia-evalhub.fullname" . }}-{{ .Values.mode }}
+  name: {{ include "gaussia-evalhub.fullname" . }}-submit
   labels:
     {{- include "gaussia-evalhub.labels" . | nindent 4 }}
 spec:
@@ -31,8 +32,6 @@ spec:
               value: {{ .Values.packageSpec | quote }}
             - name: EVALHUB_SDK_SPEC
               value: {{ .Values.evalhubSdkSpec | quote }}
-            - name: QUICKSTART_MODE
-              value: {{ .Values.mode | quote }}
             - name: QUICKSTART_FIXTURE_PATH
               value: "/quickstart/agent_transcript_{{ .Values.quickstart.fixture }}.json"
             - name: QUICKSTART_BENCHMARKS
@@ -44,7 +43,7 @@ spec:
             - name: QUICKSTART_EVALHUB_READY_TIMEOUT_SECONDS
               value: {{ .Values.quickstart.evalhubReadyTimeoutSeconds | quote }}
             - name: QUICKSTART_WAIT_FOR_MLFLOW
-              value: {{ (and .Values.platform.enabled .Values.platform.mlflow.enabled) | quote }}
+              value: {{ include "gaussia-evalhub.waitForMlflow" . | quote }}
             - name: QUICKSTART_MLFLOW_READY_TIMEOUT_SECONDS
               value: {{ .Values.quickstart.mlflowReadyTimeoutSeconds | quote }}
             - name: EVALHUB_BASE_URL
@@ -100,3 +99,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

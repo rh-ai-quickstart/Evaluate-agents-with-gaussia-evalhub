@@ -1,12 +1,13 @@
 # Measure agent quality with Gaussia and EvalHub
 
-Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversations with repeatable Gaussia benchmarks, EvalHub jobs, and MLflow metrics.
+Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversations with repeatable [Gaussia] benchmarks, EvalHub jobs, and MLflow metrics.
 
 ## Table of contents
 
 - [Detailed description](#detailed-description)
   - [The challenge](#the-challenge)
   - [Our solution](#our-solution)
+  - [Metric families](#gaussia-metric-families)
   - [What you'll build](#what-youll-build)
   - [See it in action](#see-it-in-action)
   - [Architecture diagrams](#architecture-diagrams)
@@ -18,8 +19,6 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversatio
   - [Quick Start - Self-contained OpenShift run](#quick-start---self-contained-openshift-run)
   - [Run all benchmarks](#run-all-benchmarks)
   - [Use existing EvalHub and MLflow](#use-existing-evalhub-and-mlflow)
-  - [OpenShift smoke job](#openshift-smoke-job)
-  - [Local smoke test](#local-smoke-test)
   - [Validate results](#validate-results)
   - [Delete](#delete)
 - [References](#references)
@@ -33,7 +32,7 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversatio
 
 ## Detailed description
 
-This AI quickstart helps platform, product, and model teams measure agent quality with repeatable evaluation jobs. It uses Gaussia as the evaluation provider, EvalHub as the job orchestration layer, and MLflow as the metrics and run history backend.
+This AI quickstart helps platform, product, and model teams measure agent quality with repeatable evaluation jobs. It uses [Gaussia] as the evaluation provider, EvalHub as the job orchestration layer, and MLflow as the metrics and run history backend.
 
 The included scenario evaluates a first-line support agent handling an application release incident. The same pattern applies to IT service desk agents, incident response assistants, customer support agents, and internal operations agents.
 
@@ -50,23 +49,61 @@ Teams need a repeatable way to answer practical release questions:
 
 ### Our solution
 
-This quickstart turns an agent transcript into an EvalHub job and evaluates it with Gaussia benchmarks. EvalHub fans out benchmark work, the Gaussia provider computes metrics, and MLflow records the evaluated model, dataset, source, tags, metrics, and artifacts.
+This quickstart turns a fixture-based agent transcript into an EvalHub job and evaluates it with [Gaussia] benchmarks. EvalHub fans out benchmark work, the [Gaussia] provider computes metrics, and MLflow records the evaluated model, dataset, source, tags, metrics, and artifacts.
 
-The primary flow is source-runtime agnostic. Any system that can produce `dataset + metadata` can create the same EvalHub job. Alquimia Runtime is documented as an optional source path, not as a dependency of the quickstart.
+The primary flow is fully contained in the Red Hat OpenShift AI environment created by the quickstart: a submit Job sends `dataset + metadata` to EvalHub, EvalHub runs the [Gaussia] provider, and MLflow stores the evaluation history.
+
+### Gaussia metric families
+
+[Gaussia] is a Python evaluation framework for measuring AI assistant and agent behavior across conversation quality, context use, safety, and response style. In this quickstart, [Gaussia] runs as an EvalHub provider: EvalHub creates one benchmark job per selected metric family, and each benchmark writes structured results to MLflow.
+
+The quickstart currently exposes these [Gaussia] metric families through the EvalHub provider:
+
+| Metric family | What it measures | Typical signal |
+| --- | --- | --- |
+| `humanity` | Emotional profile and human-like response tone using lexicon-based emotion distributions. | Emotional entropy and emotion balance across assistant responses. |
+| `context` | Whether the assistant answer stays aligned with the provided conversation context. | Context-awareness score for the session. |
+| `conversational` | Dialogue quality across memory, language, Grice's maxims, and sensibleness. | Multi-dimension conversational scores from an LLM judge. |
+| `bias` | Potential biased behavior across protected attributes such as gender, race, religion, nationality, and sexual orientation. | Attribute-level bias rates and aggregate bias score. |
+| `toxicity` | Toxic language and harmful association patterns across detected groups. | Toxicity, directed toxicity, sentiment bias, and group dispersion metrics. |
+
+The `humanity` benchmark can run without external judge credentials. The `context`, `conversational`, and `bias` benchmarks require judge or guardian model settings because they use model-backed evaluation. The `toxicity` benchmark uses embedding and lexicon-based analysis.
+
+[Gaussia] also includes additional metric families that can be used when the dataset or evaluation workflow requires a different signal. They are not part of the default quickstart run, but they are useful extension points for future EvalHub provider benchmarks:
+
+| Metric family | What it measures | Typical signal |
+| --- | --- | --- |
+| `agentic` | Complete agent task correctness across answers and tool behavior. | Correct interactions, fully-correct sessions, `pass@k`, `pass^k`, tool selection, parameter accuracy, sequence correctness, and result utilization. |
+| `best_of` | Head-to-head comparison of multiple assistant responses for the same prompt or conversation. | Winning assistant id, contest history, judge confidence, verdict, and reasoning. |
+| `regulatory` | Whether an assistant response is supported or contradicted by a regulatory or policy corpus. | Compliance score, verdict, supporting chunks, contradicting chunks, and retrieved evidence. |
+| `vision_similarity` | Semantic similarity between a vision-language model description and human ground truth. | Mean, minimum, and maximum similarity across frames or examples. |
+| `vision_hallucination` | Whether a vision-language model describes content that does not match the ground truth scene. | Hallucination rate, number of hallucinated frames, and per-frame similarity. |
 
 ### What you'll build
 
 By completing this quickstart, you will:
 
-- Deploy a namespace-scoped evaluation stack with MLflow, EvalHub, the Gaussia provider registration, and a quickstart Job.
+- Deploy a namespace-scoped evaluation stack with MLflow, EvalHub, the [Gaussia] provider registration, and a quickstart Job.
 - Submit a live EvalHub job for a deterministic agent transcript without relying on a pre-existing EvalHub service.
 - Run three benchmarks for a short transcript and five benchmarks for a longer transcript.
 - Confirm EvalHub benchmark fan-out and MLflow metric tracking.
-- Understand how to connect an external source system, including Alquimia Runtime, to the same evaluation flow.
 
 ### See it in action
 
-The default smoke path runs the `humanity` benchmark against a deterministic agent transcript and prints EvalHub-compatible results:
+The default path submits a deterministic agent transcript to EvalHub, runs the `humanity` benchmark with the [Gaussia] provider, and records the benchmark run in MLflow:
+
+```json
+{
+  "status": "submitted",
+  "job_id": "...",
+  "benchmark_ids": [
+    "humanity"
+  ],
+  "session_id": "support-agent-long-session-20260508184548"
+}
+```
+
+The [Gaussia] provider then reports benchmark results back through EvalHub:
 
 ```json
 {
@@ -80,21 +117,21 @@ The default smoke path runs the `humanity` benchmark against a deterministic age
 }
 ```
 
-When connected to EvalHub and MLflow, the long transcript creates one EvalHub job, five benchmark jobs, and one MLflow run per benchmark.
+With `quickstart.benchmarks=auto`, the long transcript creates one EvalHub job, five benchmark jobs, and one MLflow run per benchmark.
 
-![Example EvalHub results view showing five Gaussia benchmark jobs for one evaluated agent transcript](docs/images/evalhub-results-view.svg)
+![Example EvalHub results view showing five benchmark jobs for one evaluated agent transcript](docs/images/evalhub-results-view.svg)
 
-![Example MLflow runs view showing dataset, source, model, and benchmark metrics populated for Gaussia evaluations](docs/images/mlflow-runs-view.svg)
+![Example MLflow runs view showing dataset, source, model, and benchmark metrics populated for evaluations](docs/images/mlflow-runs-view.svg)
 
 ### Architecture diagrams
 
-![Architecture diagram showing an agent transcript sent to EvalHub, evaluated by the Gaussia provider, and logged to MLflow](docs/images/gaussia-evalhub-architecture.svg)
+![Architecture diagram showing an agent transcript sent to EvalHub, evaluated by the provider, and logged to MLflow](docs/images/gaussia-evalhub-architecture.svg)
 
 **Flow summary:**
 
-1. A source system exports an agent transcript as a Gaussia-compatible dataset.
-2. The quickstart submits an EvalHub job with one benchmark entry per selected Gaussia metric family.
-3. EvalHub starts the Gaussia provider adapter with `python -m gaussia.integrations.evalhub.adapter`.
+1. The quickstart loads a public agent transcript fixture as a [Gaussia]-compatible dataset.
+2. The quickstart submits an EvalHub job with one benchmark entry per selected [Gaussia] metric family.
+3. EvalHub starts the [Gaussia] provider adapter with `python -m gaussia.integrations.evalhub.adapter`.
 4. The provider evaluates the dataset, reports results to EvalHub, and logs metrics, datasets, sources, and model metadata to MLflow.
 
 ## Requirements
@@ -112,9 +149,8 @@ When connected to EvalHub and MLflow, the long transcript creates one EvalHub jo
 
 ### Required user permissions
 
-- Local smoke test: no cluster permissions.
 - Self-contained OpenShift run: permission to create ConfigMaps, Jobs, Pods, Routes, RoleBindings, ServiceAccounts, Services, Deployments, and MLflow custom resources in the target namespace.
-- Existing-service mode: EvalHub token with permission to create jobs in the configured tenant.
+- Existing-service flow: EvalHub token with permission to create jobs in the configured tenant.
 
 ## Deploy
 
@@ -123,8 +159,8 @@ When connected to EvalHub and MLflow, the long transcript creates one EvalHub jo
 Clone the repository:
 
 ```bash
-git clone https://github.com/rh-ai-quickstart/Evaluate-agents-with-gaussian-evalhub.git
-cd Evaluate-agents-with-gaussian-evalhub
+git clone https://github.com/rh-ai-quickstart/Evaluate-agents-with-gaussia-evalhub.git
+cd Evaluate-agents-with-gaussia-evalhub
 ```
 
 Create a namespace for the quickstart:
@@ -136,12 +172,11 @@ oc new-project "${NAMESPACE}"
 
 ### Quick Start - Self-contained OpenShift run
 
-Install the quickstart stack and submit one live EvalHub job. This creates MLflow, EvalHub, the Gaussia provider registration, and the submit Job in the same namespace:
+For the shortest path, install the quickstart stack and submit one live EvalHub job in the same Helm release. This creates MLflow, EvalHub, the [Gaussia] provider registration, and the submit Job in the same namespace:
 
 ```bash
 helm install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
-  --set mode=submit \
   --set quickstart.fixture=long \
   --set quickstart.benchmarks=humanity \
   --set quickstart.uniqueRun=true
@@ -153,38 +188,110 @@ Watch the job:
 oc logs job/gaussia-evalhub-submit -n "${NAMESPACE}" -f
 ```
 
-The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, Gaussia provider execution, and MLflow run logging.
+The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, [Gaussia] provider execution, and MLflow run logging.
+
+For repeated demos, install the platform once without a Job:
+
+```bash
+helm install gaussia-evalhub ./chart \
+  --namespace "${NAMESPACE}" \
+  --set job.enabled=false
+```
+
+If the namespace already has an OpenShift AI MLflow instance named `mlflow`, use it instead of creating a new one:
+
+```bash
+helm install gaussia-evalhub ./chart \
+  --namespace "${NAMESPACE}" \
+  --set job.enabled=false \
+  --set platform.mlflow.create=false
+```
+
+If MLflow is shared from another namespace, keep the EvalHub tenant as the quickstart namespace and create a local `mlflow` service alias that points to the shared service:
+
+```bash
+export MLFLOW_NAMESPACE="redhat-ods-applications"
+
+helm install gaussia-evalhub ./chart \
+  --namespace "${NAMESPACE}" \
+  --set job.enabled=false \
+  --set platform.mlflow.create=false \
+  --set platform.mlflow.serviceAlias.enabled=true \
+  --set platform.mlflow.serviceAlias.externalName="mlflow.${MLFLOW_NAMESPACE}.svc.cluster.local" \
+  --set platform.mlflow.trackingUri="https://mlflow.${MLFLOW_NAMESPACE}.svc:8443" \
+  --set platform.mlflow.workspace="${NAMESPACE}" \
+  --set platform.mlflow.rbacNamespace="${NAMESPACE}"
+```
+
+Wait for EvalHub to be ready:
+
+```bash
+oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
+```
+
+Then launch a quickstart Job as a separate release against the installed EvalHub service:
+
+```bash
+helm install gaussia-evalhub-run-001 ./chart \
+  --namespace "${NAMESPACE}" \
+  --set platform.enabled=false \
+  --set quickstart.fixture=long \
+  --set quickstart.benchmarks=humanity \
+  --set quickstart.uniqueRun=true \
+  --set evalhub.baseUrl="http://gaussia-evalhub-evalhub:8080" \
+  --set evalhub.tenant="${NAMESPACE}"
+```
+
+Watch only that run:
+
+```bash
+oc logs job/gaussia-evalhub-run-001-submit -n "${NAMESPACE}" -f
+```
+
+Use a new release name for each run, such as `gaussia-evalhub-run-002`, or uninstall the previous run release before reusing its name:
+
+```bash
+helm uninstall gaussia-evalhub-run-001 --namespace "${NAMESPACE}"
+```
 
 ### Run all benchmarks
 
 To run `context`, `conversational`, `bias`, and `toxicity`, provide judge and guardian settings. These values are passed to the provider registration created by the chart:
 
 ```bash
-export GAUSSIA_JUDGE_MODEL="openai/gpt-oss-20b"
-export GAUSSIA_JUDGE_BASE_URL="https://api.groq.com/openai/v1"
+export GAUSSIA_JUDGE_MODEL="<judge-model-name>"
+export GAUSSIA_JUDGE_BASE_URL="<judge-api-base-url>"
 export GAUSSIA_JUDGE_API_KEY="<judge-api-key>"
-export GAUSSIA_GUARDIAN_MODEL="ibm-granite/granite-guardian-3.1-2b"
-export GAUSSIA_GUARDIAN_BASE_URL="<guardian-endpoint-url>"
+export GAUSSIA_GUARDIAN_MODEL="<guardian-model-name>"
+export GAUSSIA_GUARDIAN_BASE_URL="<guardian-api-base-url>"
 export GAUSSIA_GUARDIAN_API_KEY="<guardian-api-key>"
 ```
 
-Kubernetes Jobs are immutable, so uninstall the previous release before changing the Job mode or benchmark settings:
+If the platform release is already installed, update only the provider registration with those settings:
 
 ```bash
-helm uninstall gaussia-evalhub --namespace "${NAMESPACE}"
-
-helm install gaussia-evalhub ./chart \
+helm upgrade gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
-  --set mode=submit \
-  --set quickstart.fixture=long \
-  --set quickstart.benchmarks=auto \
-  --set quickstart.uniqueRun=true \
+  --set job.enabled=false \
   --set-string platform.provider.judge.model="${GAUSSIA_JUDGE_MODEL}" \
   --set-string platform.provider.judge.baseUrl="${GAUSSIA_JUDGE_BASE_URL}" \
   --set-string platform.provider.judge.apiKey="${GAUSSIA_JUDGE_API_KEY}" \
   --set-string platform.provider.guardian.model="${GAUSSIA_GUARDIAN_MODEL}" \
   --set-string platform.provider.guardian.baseUrl="${GAUSSIA_GUARDIAN_BASE_URL}" \
   --set-string platform.provider.guardian.apiKey="${GAUSSIA_GUARDIAN_API_KEY}"
+```
+
+Then launch an all-benchmark run as a separate Job release:
+
+```bash
+helm install gaussia-evalhub-run-all-001 ./chart \
+  --namespace "${NAMESPACE}" \
+  --set platform.enabled=false \
+  --set quickstart.fixture=long \
+  --set quickstart.benchmarks=auto \
+  --set quickstart.uniqueRun=true \
+  --set evalhub.baseUrl="http://gaussia-evalhub-evalhub:8080" \
+  --set evalhub.tenant="${NAMESPACE}"
 ```
 
 Expected output includes:
@@ -215,7 +322,6 @@ export EVALHUB_TENANT="default"
 helm install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
-  --set mode=submit \
   --set quickstart.fixture=long \
   --set quickstart.benchmarks=auto \
   --set quickstart.uniqueRun=true \
@@ -224,43 +330,6 @@ helm install gaussia-evalhub ./chart \
   --set evalhub.tenant="${EVALHUB_TENANT}" \
   --set evalhub.insecure=false
 ```
-
-### OpenShift smoke job
-
-Use smoke mode when you only want to verify the Gaussia EvalHub adapter in OpenShift without creating an EvalHub job:
-
-```bash
-helm install gaussia-evalhub-smoke ./chart \
-  --namespace "${NAMESPACE}" \
-  --set platform.enabled=false \
-  --set mode=smoke \
-  --set quickstart.fixture=long \
-  --set quickstart.benchmarks=humanity
-```
-
-### Local smoke test
-
-Run the adapter locally with the long fixture and the `humanity` benchmark. This path does not require EvalHub, MLflow, OpenShift, judge credentials, or guardian credentials.
-
-```bash
-uv run \
-  --with "gaussia[evalhub]" \
-  python quickstart/local_provider_smoke.py \
-    --fixture quickstart/fixtures/agent_transcript_long.json \
-    --benchmarks humanity
-```
-
-To use the benchmark selector locally, run:
-
-```bash
-uv run \
-  --with "gaussia[evalhub]" \
-  python quickstart/local_provider_smoke.py \
-    --fixture quickstart/fixtures/agent_transcript_long.json \
-    --benchmarks auto
-```
-
-The long fixture selects `humanity`, `context`, `conversational`, `bias`, and `toxicity`. Configure the required `GAUSSIA_*` judge, guardian, and toxicity settings before running model-backed benchmarks.
 
 You can also submit a live EvalHub job from your workstation:
 
@@ -292,6 +361,12 @@ In MLflow, confirm that each benchmark run includes:
 - evaluated model name from `GAUSSIA_EVALUATED_MODEL_NAME`.
 - tags for `assistant_id`, `session_id`, `stream_id`, and `control_id`.
 
+Expected results:
+
+![Expected MLflow runs table showing benchmark runs with dataset, source, evaluated model, and metric pack columns populated](docs/images/mlflow-expected-runs-table.png)
+
+![Expected MLflow chart view grouped by metric pack with context and conversational metrics](docs/images/mlflow-expected-metric-charts.png)
+
 ### Delete
 
 Remove the Helm release:
@@ -311,7 +386,6 @@ oc delete project "${NAMESPACE}"
 - [Gaussia documentation](https://github.com/gaussia-labs/pygaussia)
 - [EvalHub provider adapter entrypoint](https://github.com/gaussia-labs/pygaussia)
 - [Red Hat AI quickstart template](https://github.com/rh-ai-quickstart/ai-quickstart-template)
-- [Alquimia Runtime integration notes](docs/alquimia-runtime-integration.md)
 
 ## Technical details
 
@@ -338,8 +412,6 @@ The public quickstart uses the preferred EvalHub provider contract:
 }
 ```
 
-The Gaussia EvalHub adapter still accepts the legacy `context_persistance` payload for systems that already emit it. New integrations should use `dataset + metadata`.
-
 ### Benchmark selection
 
 The quickstart selector always includes:
@@ -353,21 +425,24 @@ When the dataset has five or more interactions, it also includes:
 - `bias`
 - `toxicity`
 
-Use `--benchmarks humanity` for a no-credential smoke test.
+Use `quickstart.benchmarks=humanity` when you want the full EvalHub, [Gaussia], and MLflow flow without judge or guardian credentials.
 
 ### Provider registration
 
-The Helm chart registers the Gaussia provider in EvalHub with provider id `gaussia` and this adapter command:
+The Helm chart registers the [Gaussia] provider in EvalHub with provider id `gaussia` and this adapter command:
 
 ```bash
 python -m gaussia.integrations.evalhub.adapter
 ```
 
-The embedded provider runtime uses a Python base image and installs these packages before running the adapter:
+The provider container runs the [Gaussia] EvalHub adapter with:
 
 ```bash
-python -m pip install "gaussia[evalhub]" "eval-hub-sdk[adapter]==0.1.5"
+python -m gaussia.integrations.evalhub.adapter
 ```
+
+By default, the chart uses a provider image with the [Gaussia] EvalHub adapter already installed. Override `platform.provider.packageSpec` and `platform.provider.evalhubSdkSpec` only when you want the provider pod to install packages at startup.
+Use `platform.provider.image.fullReference` when you need to pin the provider to an internal image registry digest.
 
 ### Model and run metadata
 
@@ -378,23 +453,25 @@ export GAUSSIA_EVALUATED_MODEL_NAME="support-agent-demo-v1"
 export GAUSSIA_EVALUATED_MODEL_URL="https://example.invalid/models/support-agent-demo-v1"
 ```
 
-Judge, guardian, toxicity, and MLflow settings keep the `GAUSSIA_*` and `MLFLOW_*` environment variable names used by the Gaussia EvalHub provider.
+Judge, guardian, toxicity, and MLflow settings keep the `GAUSSIA_*` and `MLFLOW_*` environment variable names used by the [Gaussia] EvalHub provider.
 
 ### Repository structure
 
 ```text
 .
 ├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
-├── docs/                  # Integration notes and architecture images
-├── quickstart/            # Local runners and public agent transcript fixtures
+├── docs/                  # Architecture and results images
+├── quickstart/            # EvalHub submitter and public agent transcript fixtures
 └── README.md              # Red Hat AI quickstart guide
 ```
 
 ## Tags
 
 - **Title:** Measure agent quality with Gaussia and EvalHub
-- **Description:** Evaluate agent conversations with repeatable Gaussia benchmarks, EvalHub jobs, and MLflow metrics on Red Hat OpenShift AI.
+- **Description:** Evaluate agent conversations with repeatable [Gaussia] benchmarks, EvalHub jobs, and MLflow metrics on Red Hat OpenShift AI.
 - **Business challenge:** Adopt and scale AI
 - **Product:** OpenShift AI, OpenShift
 - **Use case:** Agent evaluation, model observability, continuous improvement
 - **Contributor org:** Alquimia AI
+
+[Gaussia]: https://github.com/gaussia-labs/pygaussia

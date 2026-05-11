@@ -18,9 +18,9 @@
     </style>
   </defs>
 
-  <rect x="30" y="35" width="1120" height="420" class="platform"/>
-  <text x="60" y="75" class="label">Red Hat OpenShift AI quickstart runtime</text>
-  <text x="60" y="100" class="small">Namespace-scoped smoke or submit job using Gaussia, EvalHub, and MLflow configuration</text>
+  <rect x="30" y="35" width="1120" height="430" class="platform"/>
+  <text x="60" y="75" class="label">Red Hat OpenShift AI quickstart environment</text>
+  <text x="60" y="100" class="small">Namespace-scoped submit job using Gaussia, EvalHub, and MLflow configuration</text>
 
   <rect x="75" y="165" width="190" height="115" class="box source"/>
   <text x="105" y="205" class="label">Agent transcript</text>
@@ -57,6 +57,6 @@
   <text x="825" y="165" class="small">log</text>
   <text x="825" y="305" class="small">report</text>
 
-  <rect x="75" y="350" width="1000" height="60" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
-  <text x="105" y="385" class="small">Optional source path: Alquimia Runtime can emit events to a bridge that creates the same EvalHub job. The provider remains reusable and runtime agnostic.</text>
+  <rect x="75" y="405" width="1000" height="38" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
+  <text x="105" y="430" class="small">The quickstart deploys EvalHub, registers the Gaussia provider, submits fixture-based jobs, and records benchmark runs in MLflow.</text>
 </svg>

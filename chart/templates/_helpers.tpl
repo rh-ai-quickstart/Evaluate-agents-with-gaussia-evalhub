@@ -39,8 +39,24 @@
 {{- default .Release.Namespace .Values.platform.mlflow.workspace -}}
 {{- end -}}
 
+{{- define "gaussia-evalhub.mlflowRbacNamespace" -}}
+{{- default (include "gaussia-evalhub.mlflowWorkspace" .) .Values.platform.mlflow.rbacNamespace -}}
+{{- end -}}
+
 {{- define "gaussia-evalhub.mlflowTrackingUri" -}}
 {{- default (printf "https://%s.%s.svc:8443" (include "gaussia-evalhub.mlflowName" .) .Release.Namespace) .Values.platform.mlflow.trackingUri -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.mlflowServiceAliasExternalName" -}}
+{{- default (printf "%s.%s.svc.cluster.local" (include "gaussia-evalhub.mlflowName" .) (include "gaussia-evalhub.mlflowRbacNamespace" .)) .Values.platform.mlflow.serviceAlias.externalName -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.providerImage" -}}
+{{- if .Values.platform.provider.image.fullReference -}}
+{{- .Values.platform.provider.image.fullReference -}}
+{{- else -}}
+{{- printf "%s:%s" .Values.platform.provider.image.repository .Values.platform.provider.image.tag -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "gaussia-evalhub.evalhubBaseUrl" -}}
@@ -55,6 +71,14 @@
 
 {{- define "gaussia-evalhub.evalhubTenant" -}}
 {{- default .Release.Namespace .Values.evalhub.tenant -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.waitForMlflow" -}}
+{{- if ne (toString .Values.quickstart.waitForMlflow) "" -}}
+{{- .Values.quickstart.waitForMlflow -}}
+{{- else -}}
+{{- and .Values.platform.enabled .Values.platform.mlflow.enabled -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "gaussia-evalhub.labels" -}}

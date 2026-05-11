@@ -20,6 +20,7 @@ roleRef:
   kind: ClusterRole
   name: edit
 {{- if .Values.platform.mlflow.enabled }}
+{{- if .Values.platform.mlflow.create }}
 ---
 apiVersion: mlflow.opendatahub.io/v1
 kind: MLflow
@@ -38,11 +39,13 @@ spec:
       requests:
         storage: {{ .Values.platform.mlflow.storage.size | quote }}
   serveArtifacts: true
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ include "gaussia-evalhub.fullname" . }}-mlflow-workspace-access
+  namespace: {{ include "gaussia-evalhub.mlflowRbacNamespace" . }}
   labels:
     {{- include "gaussia-evalhub.labels" . | nindent 4 }}
 rules:
@@ -63,16 +66,21 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "gaussia-evalhub.fullname" . }}-mlflow-workspace-access
+  namespace: {{ include "gaussia-evalhub.mlflowRbacNamespace" . }}
   labels:
     {{- include "gaussia-evalhub.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
     name: {{ include "gaussia-evalhub.platformServiceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+  - kind: ServiceAccount
+    name: default
+    namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: {{ include "gaussia-evalhub.fullname" . }}-mlflow-workspace-access
-{{- if .Values.platform.mlflow.route.enabled }}
+{{- if and .Values.platform.mlflow.create .Values.platform.mlflow.route.enabled }}
 ---
 apiVersion: route.openshift.io/v1
 kind: Route
@@ -88,6 +96,22 @@ spec:
   to:
     kind: Service
     name: {{ include "gaussia-evalhub.mlflowName" . }}
+{{- end }}
+{{- if and (not .Values.platform.mlflow.create) .Values.platform.mlflow.serviceAlias.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gaussia-evalhub.mlflowName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+spec:
+  type: ExternalName
+  externalName: {{ include "gaussia-evalhub.mlflowServiceAliasExternalName" . | quote }}
+  ports:
+    - name: https
+      port: 8443
+      protocol: TCP
 {{- end }}
 {{- end }}
 {{- if .Values.platform.evalhub.enabled }}
@@ -150,13 +174,17 @@ data:
     description: Gaussia-based conversational evaluation provider for agent transcripts
     runtime:
       k8s:
-        image: "{{ .Values.platform.provider.image.repository }}:{{ .Values.platform.provider.image.tag }}"
+        image: {{ include "gaussia-evalhub.providerImage" . | quote }}
         image_pull_policy: {{ .Values.platform.provider.image.pullPolicy | quote }}
         service_account: {{ include "gaussia-evalhub.platformServiceAccountName" . | quote }}
         entrypoint:
           - /bin/bash
           - -lc
-          - python -m pip install --no-cache-dir "${GAUSSIA_PACKAGE_SPEC}" "${EVALHUB_SDK_SPEC}" && python -m gaussia.integrations.evalhub.adapter
+          - |
+            if [ -n "${GAUSSIA_PACKAGE_SPEC}${EVALHUB_SDK_SPEC}" ]; then
+              python -m pip install --no-cache-dir ${GAUSSIA_PACKAGE_SPEC} ${EVALHUB_SDK_SPEC}
+            fi
+            python -m gaussia.integrations.evalhub.adapter
         env:
           - name: GAUSSIA_PACKAGE_SPEC
             value: {{ .Values.platform.provider.packageSpec | quote }}

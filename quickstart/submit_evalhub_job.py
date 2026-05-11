@@ -168,7 +168,6 @@ def build_experiment(metadata: dict[str, Any]) -> ExperimentConfig:
             ExperimentTag(key="session_id", value=str(metadata.get("session_id", ""))),
             ExperimentTag(key="stream_id", value=str(metadata.get("stream_id", ""))),
             ExperimentTag(key="control_id", value=str(metadata.get("control_id", ""))),
-            ExperimentTag(key="source", value=str(metadata.get("source", ""))),
         ],
     )
 
