@@ -15,12 +15,14 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversatio
   - [Minimum software requirements](#minimum-software-requirements)
   - [Required user permissions](#required-user-permissions)
 - [Deploy](#deploy)
-  - [Prerequisites](#prerequisites)
-  - [Quick Start - Self-contained OpenShift run](#quick-start---self-contained-openshift-run)
-  - [Run all benchmarks](#run-all-benchmarks)
-  - [Use existing EvalHub and MLflow](#use-existing-evalhub-and-mlflow)
-  - [Validate results](#validate-results)
-  - [Delete](#delete)
+  - [Step 1 - Deploy judge and guardian models](#step-1---deploy-judge-and-guardian-models)
+  - [Step 2 - Prepare the quickstart project](#step-2---prepare-the-quickstart-project)
+  - [Step 3 - Install the evaluation platform](#step-3---install-the-evaluation-platform)
+  - [Step 4 - Run the first evaluation](#step-4---run-the-first-evaluation)
+  - [Step 5 - Run the full benchmark suite](#step-5---run-the-full-benchmark-suite)
+  - [Step 6 - Validate results](#step-6---validate-results)
+  - [Step 7 - Clean up](#step-7---clean-up)
+  - [Optional - Use existing EvalHub and MLflow](#optional---use-existing-evalhub-and-mlflow)
 - [References](#references)
 - [Technical details](#technical-details)
   - [Payload contract](#payload-contract)
@@ -150,7 +152,51 @@ With `quickstart.benchmarks=auto`, the included fixtures create one EvalHub job,
 
 ## Deploy
 
-### Prerequisites
+### Step 1 - Deploy judge and guardian models
+
+The default `humanity` benchmark can run without external model endpoints. To run the full benchmark set, deploy a judge model and a guardian model in Red Hat OpenShift AI before installing this quickstart.
+
+| Model role | Used by | Deployment requirement |
+| --- | --- | --- |
+| Judge model | `context`, `conversational`, and `agentic` | OpenAI-compatible chat completions endpoint exposed at `/v1`. |
+| Guardian model | `bias` | OpenAI-compatible chat completions endpoint exposed at `/v1`. |
+
+Deploy the judge model:
+
+1. In OpenShift AI, open the model catalog and search for `gpt-oss-20b`.
+2. Open the model detail page and select **Deploy model**.
+3. Use model location `URI` with `oci://registry.redhat.io/rhelai1/modelcar-gpt-oss-20b:1.5`.
+4. Set model type to `Generative AI model (Example: LLM)`.
+5. Review the deployment settings, deploy the model, and wait until the endpoint is ready.
+6. Copy the model route, token, and served model name.
+
+Deploy the guardian model:
+
+1. Download the `ibm-granite/granite-guardian-3.1-2b` model artifacts and upload them to S3-compatible object storage, such as MinIO.
+2. In the OpenShift AI project, create an S3-compatible data connection that points to the bucket and path containing the guardian model.
+3. Deploy a model from the existing data connection and set model type to `Generative AI model (Example: LLM)`.
+4. Use a vLLM/KServe serving runtime with a GPU-capable hardware profile.
+5. Enable the external route and token authentication.
+6. Wait until the endpoint is ready, then copy the model route, token, and served model name.
+
+Add the resulting values to `.env`:
+
+```bash
+GAUSSIA_JUDGE_MODEL="<judge-served-model-name>"
+GAUSSIA_JUDGE_BASE_URL="https://<judge-route>/v1"
+GAUSSIA_JUDGE_API_KEY="<judge-token>"
+GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT="false"
+
+GAUSSIA_GUARDIAN_MODEL="<guardian-served-model-name>"
+GAUSSIA_GUARDIAN_TOKENIZER_MODEL="ibm-granite/granite-guardian-3.1-2b"
+GAUSSIA_GUARDIAN_BASE_URL="https://<guardian-route>/v1"
+GAUSSIA_GUARDIAN_API_KEY="<guardian-token>"
+GAUSSIA_GUARDIAN_CHAT_COMPLETIONS="true"
+```
+
+If you already have compatible judge and guardian endpoints, use those values instead.
+
+### Step 2 - Prepare the quickstart project
 
 Clone the repository:
 
@@ -188,27 +234,9 @@ Available fixtures:
 | `retail` | Retail shopping and support assistant | 10 |
 | `root-cause-analysis` | SRE root-cause analysis assistant | 10 |
 
-### Quick Start - Self-contained OpenShift run
+### Step 3 - Install the evaluation platform
 
-For the shortest path, install the quickstart stack and submit one live EvalHub job in the same Helm release. This creates MLflow, EvalHub, the [Gaussia] provider registration, and the submit Job in the same namespace:
-
-```bash
-helm install gaussia-evalhub ./chart \
-  --namespace "${NAMESPACE}" \
-  --set quickstart.fixture=first-line-support \
-  --set quickstart.benchmarks=humanity \
-  --set quickstart.uniqueRun=true
-```
-
-Watch the job:
-
-```bash
-oc logs job/gaussia-evalhub-submit -n "${NAMESPACE}" -f
-```
-
-The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, [Gaussia] provider execution, and MLflow run logging.
-
-For repeated demos, install the platform once without a Job:
+Install the quickstart platform once. This creates EvalHub, the [Gaussia] provider registration, and MLflow in the same namespace. Jobs will be launched separately in the next steps:
 
 ```bash
 helm install gaussia-evalhub ./chart \
@@ -247,7 +275,9 @@ Wait for EvalHub to be ready:
 oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
 ```
 
-Then launch a quickstart Job as a separate release against the installed EvalHub service:
+### Step 4 - Run the first evaluation
+
+Launch a quickstart Job as a separate release against the installed EvalHub service:
 
 ```bash
 helm install gaussia-evalhub-run-001 ./chart \
@@ -266,15 +296,13 @@ Watch only that run:
 oc logs job/gaussia-evalhub-run-001-submit -n "${NAMESPACE}" -f
 ```
 
-Use a new release name for each run, such as `gaussia-evalhub-run-002`, or uninstall the previous run release before reusing its name:
+The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, [Gaussia] provider execution, and MLflow run logging.
 
-```bash
-helm uninstall gaussia-evalhub-run-001 --namespace "${NAMESPACE}"
-```
+Use a new release name for each run, such as `gaussia-evalhub-run-002`, or uninstall the previous run release before reusing its name.
 
-### Run all benchmarks
+### Step 5 - Run the full benchmark suite
 
-To run `context`, `conversational`, `agentic`, `bias`, and `toxicity`, fill the judge and guardian settings in `.env` and load them into your shell:
+To run `context`, `conversational`, `agentic`, `bias`, and `toxicity`, use the judge and guardian endpoints from Step 1, fill their settings in `.env`, and load them into your shell:
 
 ```bash
 set -a
@@ -282,7 +310,7 @@ source .env
 set +a
 ```
 
-If the platform release is already installed, update only the provider registration with those settings:
+Update the provider registration with the model-backed benchmark settings:
 
 ```bash
 helm upgrade gaussia-evalhub ./chart \
@@ -331,7 +359,52 @@ Expected output includes:
 }
 ```
 
-### Use existing EvalHub and MLflow
+### Step 6 - Validate results
+
+Use these checks to confirm the quickstart completed:
+
+```bash
+oc get mlflow,deploy,svc,route,jobs,pods -n "${NAMESPACE}"
+oc logs job/gaussia-evalhub-run-001-submit -n "${NAMESPACE}"
+```
+
+In EvalHub, confirm that the selected fixture created one top-level job. With `quickstart.benchmarks=auto`, the included fixtures create six benchmark jobs.
+
+In MLflow, confirm that each benchmark run includes:
+
+- dataset name beginning with `gaussia-`.
+- source name `gaussia.integrations.evalhub.adapter`.
+- evaluated model name from fixture metadata, or from `GAUSSIA_EVALUATED_MODEL_NAME` when you override it.
+- tags for `assistant_id`, `session_id`, `stream_id`, and `control_id`.
+
+Expected results:
+
+![Expected MLflow runs table showing benchmark runs with dataset, source, evaluated model, and metric pack columns populated](docs/images/mlflow-expected-runs-table.png)
+
+![Expected MLflow chart view grouped by metric pack with context and conversational metrics](docs/images/mlflow-expected-metric-charts.png)
+
+### Step 7 - Clean up
+
+Remove any run releases you created:
+
+```bash
+helm uninstall gaussia-evalhub-run-001 --namespace "${NAMESPACE}"
+helm uninstall gaussia-evalhub-run-all-001 --namespace "${NAMESPACE}"
+```
+
+Remove the platform release:
+
+```bash
+helm uninstall gaussia-evalhub --namespace "${NAMESPACE}"
+```
+
+Delete the namespace if it was created only for this quickstart:
+
+```bash
+oc delete project "${NAMESPACE}"
+```
+
+### Optional - Use existing EvalHub and MLflow
 
 If your platform team already provides EvalHub, MLflow, and a registered `gaussia` provider, configure `EVALHUB_BASE_URL`, `EVALHUB_AUTH_TOKEN`, and `EVALHUB_TENANT` in `.env`, then disable the embedded platform and point the quickstart Job at that endpoint:
 
@@ -358,44 +431,6 @@ uv run \
     --fixture quickstart/fixtures/first-line-support.json \
     --benchmarks auto \
     --unique-run
-```
-
-### Validate results
-
-Use these checks to confirm the quickstart completed:
-
-```bash
-oc get mlflow,deploy,svc,route,jobs,pods -n "${NAMESPACE}"
-oc logs job/gaussia-evalhub-submit -n "${NAMESPACE}"
-```
-
-In EvalHub, confirm that the selected fixture created one top-level job. With `quickstart.benchmarks=auto`, the included fixtures create six benchmark jobs.
-
-In MLflow, confirm that each benchmark run includes:
-
-- dataset name beginning with `gaussia-`.
-- source name `gaussia.integrations.evalhub.adapter`.
-- evaluated model name from fixture metadata, or from `GAUSSIA_EVALUATED_MODEL_NAME` when you override it.
-- tags for `assistant_id`, `session_id`, `stream_id`, and `control_id`.
-
-Expected results:
-
-![Expected MLflow runs table showing benchmark runs with dataset, source, evaluated model, and metric pack columns populated](docs/images/mlflow-expected-runs-table.png)
-
-![Expected MLflow chart view grouped by metric pack with context and conversational metrics](docs/images/mlflow-expected-metric-charts.png)
-
-### Delete
-
-Remove the Helm release:
-
-```bash
-helm uninstall gaussia-evalhub --namespace "${NAMESPACE}"
-```
-
-Delete the namespace if it was created only for this quickstart:
-
-```bash
-oc delete project "${NAMESPACE}"
 ```
 
 ## References
