@@ -230,6 +230,8 @@ data:
             value: {{ .Values.platform.provider.agentic.toolThreshold | quote }}
           - name: GAUSSIA_GUARDIAN_MODEL
             value: {{ .Values.platform.provider.guardian.model | quote }}
+          - name: GAUSSIA_GUARDIAN_TOKENIZER_MODEL
+            value: {{ .Values.platform.provider.guardian.tokenizerModel | quote }}
           - name: GAUSSIA_GUARDIAN_API_KEY
             value: {{ .Values.platform.provider.guardian.apiKey | quote }}
           - name: GAUSSIA_GUARDIAN_BASE_URL
@@ -238,6 +240,8 @@ data:
             value: {{ .Values.platform.provider.guardian.temperature | quote }}
           - name: GAUSSIA_GUARDIAN_LOGPROBS
             value: {{ .Values.platform.provider.guardian.logprobs | quote }}
+          - name: GAUSSIA_GUARDIAN_CHAT_COMPLETIONS
+            value: {{ .Values.platform.provider.guardian.chatCompletions | quote }}
           - name: GAUSSIA_TOXICITY_EMBEDDING_MODEL
             value: {{ .Values.platform.provider.toxicity.embeddingModel | quote }}
           - name: GAUSSIA_TOXICITY_STATISTICAL_MODE

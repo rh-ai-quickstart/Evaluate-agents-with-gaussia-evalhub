@@ -292,8 +292,10 @@ helm upgrade gaussia-evalhub ./chart \
   --set-string platform.provider.judge.baseUrl="${GAUSSIA_JUDGE_BASE_URL}" \
   --set-string platform.provider.judge.apiKey="${GAUSSIA_JUDGE_API_KEY}" \
   --set-string platform.provider.guardian.model="${GAUSSIA_GUARDIAN_MODEL}" \
+  --set-string platform.provider.guardian.tokenizerModel="${GAUSSIA_GUARDIAN_TOKENIZER_MODEL}" \
   --set-string platform.provider.guardian.baseUrl="${GAUSSIA_GUARDIAN_BASE_URL}" \
   --set-string platform.provider.guardian.apiKey="${GAUSSIA_GUARDIAN_API_KEY}" \
+  --set-string platform.provider.guardian.chatCompletions="${GAUSSIA_GUARDIAN_CHAT_COMPLETIONS}" \
   --set-string platform.provider.agentic.k="${GAUSSIA_AGENTIC_K}" \
   --set-string platform.provider.agentic.threshold="${GAUSSIA_AGENTIC_THRESHOLD}" \
   --set-string platform.provider.agentic.toolThreshold="${GAUSSIA_AGENTIC_TOOL_THRESHOLD}"
