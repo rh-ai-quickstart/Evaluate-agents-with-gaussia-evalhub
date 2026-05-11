@@ -396,7 +396,8 @@ oc delete project "${NAMESPACE}"
 
 - [Gaussia documentation](https://github.com/gaussia-labs/pygaussia)
 - [EvalHub provider adapter entrypoint](https://github.com/gaussia-labs/pygaussia)
-- [Red Hat AI quickstart template](https://github.com/rh-ai-quickstart/ai-quickstart-template)
+- [Red Hat AI quickstarts catalog](https://docs.redhat.com/en/learn/ai-quickstarts)
+- [Red Hat AI quickstart contribution guide](https://github.com/rh-ai-quickstart/ai-quickstart-contrib/blob/main/CONTRIBUTING.md)
 
 ## Technical details
 
