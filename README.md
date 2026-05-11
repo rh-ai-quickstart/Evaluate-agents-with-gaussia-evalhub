@@ -154,14 +154,14 @@ With `quickstart.benchmarks=auto`, the included fixtures create one EvalHub job,
 
 ### Step 1 - Deploy judge and guardian models
 
-The default `humanity` benchmark can run without external model endpoints. To run the full benchmark set, deploy a judge model and a guardian model in Red Hat OpenShift AI before installing this quickstart.
+The default `humanity` benchmark can run without external model endpoints. To run the full benchmark set, deploy a judge model and a guardian model in Red Hat OpenShift AI before installing this quickstart. The models named below are suggested examples, not hard requirements. You can use different models if they expose compatible endpoints and produce stable responses for the benchmark role.
 
 | Model role | Used by | Deployment requirement |
 | --- | --- | --- |
 | Judge model | `context`, `conversational`, and `agentic` | OpenAI-compatible chat completions endpoint exposed at `/v1`. |
 | Guardian model | `bias` | OpenAI-compatible chat completions endpoint exposed at `/v1`. |
 
-Deploy the judge model:
+Deploy the suggested judge model:
 
 1. In OpenShift AI, open the model catalog and search for `gpt-oss-20b`.
 2. Open the model detail page and select **Deploy model**.
@@ -170,7 +170,7 @@ Deploy the judge model:
 5. Review the deployment settings, deploy the model, and wait until the endpoint is ready.
 6. Copy the model route, token, and served model name.
 
-Deploy the guardian model:
+Deploy the suggested guardian model:
 
 1. Download the `ibm-granite/granite-guardian-3.1-2b` model artifacts and upload them to S3-compatible object storage, such as MinIO.
 2. In the OpenShift AI project, create an S3-compatible data connection that points to the bucket and path containing the guardian model.
