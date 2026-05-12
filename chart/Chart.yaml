@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gaussia-evalhub
+description: Evaluate AI agent conversations with Gaussia benchmarks and EvalHub.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

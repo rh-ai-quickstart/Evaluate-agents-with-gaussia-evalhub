@@ -1,0 +1,447 @@
+{{- if .Values.platform.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "gaussia-evalhub.platformServiceAccountName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "gaussia-evalhub.fullname" . }}-evalhub-edit
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "gaussia-evalhub.platformServiceAccountName" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+{{- if .Values.platform.mlflow.enabled }}
+{{- if .Values.platform.mlflow.create }}
+---
+apiVersion: mlflow.opendatahub.io/v1
+kind: MLflow
+metadata:
+  name: {{ include "gaussia-evalhub.mlflowName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+spec:
+  storage:
+    {{- if .Values.platform.mlflow.storage.storageClassName }}
+    storageClassName: {{ .Values.platform.mlflow.storage.storageClassName | quote }}
+    {{- end }}
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: {{ .Values.platform.mlflow.storage.size | quote }}
+  serveArtifacts: true
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "gaussia-evalhub.fullname" . }}-mlflow-workspace-access
+  namespace: {{ include "gaussia-evalhub.mlflowRbacNamespace" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - mlflow.kubeflow.org
+    resources:
+      - experiments
+      - jobs
+      - registeredmodels
+    verbs:
+      - create
+      - update
+      - delete
+      - get
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "gaussia-evalhub.fullname" . }}-mlflow-workspace-access
+  namespace: {{ include "gaussia-evalhub.mlflowRbacNamespace" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "gaussia-evalhub.platformServiceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+  - kind: ServiceAccount
+    name: default
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "gaussia-evalhub.fullname" . }}-mlflow-workspace-access
+{{- if and .Values.platform.mlflow.create .Values.platform.mlflow.route.enabled }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "gaussia-evalhub.mlflowName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+spec:
+  port:
+    targetPort: https
+  tls:
+    termination: passthrough
+  to:
+    kind: Service
+    name: {{ include "gaussia-evalhub.mlflowName" . }}
+{{- end }}
+{{- if and (not .Values.platform.mlflow.create) .Values.platform.mlflow.serviceAlias.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gaussia-evalhub.mlflowName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+spec:
+  type: ExternalName
+  externalName: {{ include "gaussia-evalhub.mlflowServiceAliasExternalName" . | quote }}
+  ports:
+    - name: https
+      port: 8443
+      protocol: TCP
+{{- end }}
+{{- end }}
+{{- if .Values.platform.evalhub.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gaussia-evalhub.fullname" . }}-evalhub-config
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+data:
+  config.yaml: |-
+    service:
+      port: 8080
+      host: "0.0.0.0"
+      ready_file: "/tmp/repo-ready"
+      termination_file: "/tmp/termination-log"
+      disable_auth: true
+
+    database:
+      driver: sqlite
+      url: {{ .Values.platform.evalhub.database.url | quote }}
+
+    mlflow:
+      tracking_uri: {{ include "gaussia-evalhub.mlflowTrackingUri" . | quote }}
+      token_path: /var/run/secrets/kubernetes.io/serviceaccount/token
+      workspace: {{ include "gaussia-evalhub.mlflowWorkspace" . | quote }}
+      insecure_skip_verify: {{ .Values.platform.mlflow.insecureSkipVerify }}
+
+    prometheus:
+      enabled: true
+
+    sidecar:
+      port: 8080
+      eval_hub:
+        base_url: "http://{{ include "gaussia-evalhub.evalhubName" . }}:8080"
+        insecure_skip_verify: true
+      sidecar_container:
+        image: "{{ .Values.platform.evalhub.image.repository }}:{{ .Values.platform.evalhub.image.tag }}"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+{{- if .Values.platform.provider.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gaussia-evalhub.fullname" . }}-evalhub-providers
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+data:
+  gaussia.yaml: |-
+    id: {{ .Values.platform.provider.id | quote }}
+    name: Gaussia
+    title: {{ .Values.platform.provider.title | quote }}
+    description: Gaussia-based conversational evaluation provider for agent conversations
+    runtime:
+      k8s:
+        image: {{ include "gaussia-evalhub.providerImage" . | quote }}
+        image_pull_policy: {{ .Values.platform.provider.image.pullPolicy | quote }}
+        service_account: {{ include "gaussia-evalhub.platformServiceAccountName" . | quote }}
+        entrypoint:
+          - /bin/bash
+          - -lc
+          - |
+            if [ -n "${GAUSSIA_PACKAGE_SPEC}${EVALHUB_SDK_SPEC}" ]; then
+              python -m pip install --no-cache-dir ${GAUSSIA_PACKAGE_SPEC} ${EVALHUB_SDK_SPEC}
+            fi
+            python -m gaussia.integrations.evalhub.adapter
+        env:
+          - name: GAUSSIA_PACKAGE_SPEC
+            value: {{ .Values.platform.provider.packageSpec | quote }}
+          - name: EVALHUB_SDK_SPEC
+            value: {{ .Values.platform.provider.evalhubSdkSpec | quote }}
+          - name: HOME
+            value: {{ .Values.platform.provider.cacheRoot | quote }}
+          - name: XDG_CACHE_HOME
+            value: "{{ .Values.platform.provider.cacheRoot }}/.cache"
+          - name: HF_HOME
+            value: "{{ .Values.platform.provider.cacheRoot }}/.cache/huggingface"
+          - name: TRANSFORMERS_CACHE
+            value: "{{ .Values.platform.provider.cacheRoot }}/.cache/huggingface/transformers"
+          - name: SENTENCE_TRANSFORMERS_HOME
+            value: "{{ .Values.platform.provider.cacheRoot }}/.cache/sentence-transformers"
+          - name: MLFLOW_TRACKING_URI
+            value: {{ include "gaussia-evalhub.mlflowTrackingUri" . | quote }}
+          - name: MLFLOW_WORKSPACE
+            value: {{ include "gaussia-evalhub.mlflowWorkspace" . | quote }}
+          - name: MLFLOW_TOKEN_PATH
+            value: /var/run/secrets/kubernetes.io/serviceaccount/token
+          - name: MLFLOW_INSECURE_SKIP_VERIFY
+            value: {{ .Values.platform.mlflow.insecureSkipVerify | quote }}
+          - name: GAUSSIA_JUDGE_MODEL
+            value: {{ .Values.platform.provider.judge.model | quote }}
+          - name: GAUSSIA_JUDGE_API_KEY
+            value: {{ .Values.platform.provider.judge.apiKey | quote }}
+          - name: GAUSSIA_JUDGE_BASE_URL
+            value: {{ .Values.platform.provider.judge.baseUrl | quote }}
+          - name: GAUSSIA_JUDGE_TEMPERATURE
+            value: {{ .Values.platform.provider.judge.temperature | quote }}
+          - name: GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT
+            value: {{ .Values.platform.provider.judge.useStructuredOutput | quote }}
+          - name: GAUSSIA_JUDGE_BOS_JSON_CLAUSE
+            value: {{ .Values.platform.provider.judge.bosJsonClause | quote }}
+          - name: GAUSSIA_JUDGE_EOS_JSON_CLAUSE
+            value: {{ .Values.platform.provider.judge.eosJsonClause | quote }}
+          - name: GAUSSIA_AGENTIC_K
+            value: {{ .Values.platform.provider.agentic.k | quote }}
+          - name: GAUSSIA_AGENTIC_THRESHOLD
+            value: {{ .Values.platform.provider.agentic.threshold | quote }}
+          - name: GAUSSIA_AGENTIC_TOOL_THRESHOLD
+            value: {{ .Values.platform.provider.agentic.toolThreshold | quote }}
+          - name: GAUSSIA_GUARDIAN_MODEL
+            value: {{ .Values.platform.provider.guardian.model | quote }}
+          - name: GAUSSIA_GUARDIAN_TOKENIZER_MODEL
+            value: {{ .Values.platform.provider.guardian.tokenizerModel | quote }}
+          - name: GAUSSIA_GUARDIAN_API_KEY
+            value: {{ .Values.platform.provider.guardian.apiKey | quote }}
+          - name: GAUSSIA_GUARDIAN_BASE_URL
+            value: {{ .Values.platform.provider.guardian.baseUrl | quote }}
+          - name: GAUSSIA_GUARDIAN_TEMPERATURE
+            value: {{ .Values.platform.provider.guardian.temperature | quote }}
+          - name: GAUSSIA_GUARDIAN_LOGPROBS
+            value: {{ .Values.platform.provider.guardian.logprobs | quote }}
+          - name: GAUSSIA_GUARDIAN_CHAT_COMPLETIONS
+            value: {{ .Values.platform.provider.guardian.chatCompletions | quote }}
+          - name: GAUSSIA_TOXICITY_EMBEDDING_MODEL
+            value: {{ .Values.platform.provider.toxicity.embeddingModel | quote }}
+          - name: GAUSSIA_TOXICITY_STATISTICAL_MODE
+            value: {{ .Values.platform.provider.toxicity.statisticalMode | quote }}
+        cpu_request: {{ .Values.platform.provider.resources.requests.cpu | quote }}
+        memory_request: {{ .Values.platform.provider.resources.requests.memory | quote }}
+        cpu_limit: {{ .Values.platform.provider.resources.limits.cpu | quote }}
+        memory_limit: {{ .Values.platform.provider.resources.limits.memory | quote }}
+      local:
+        command: "python -m gaussia.integrations.evalhub.adapter"
+    benchmarks:
+      - id: humanity
+        name: Humanity
+        description: Humanity/emotional-entropy scoring over conversational turns
+        category: conversational-quality
+        metrics:
+          - humanity_assistant_emotional_entropy
+        tags:
+          - gaussia
+          - humanity
+        primary_score:
+          metric: humanity_assistant_emotional_entropy
+          lower_is_better: false
+      - id: context
+        name: Context
+        description: Context-awareness scoring over conversational turns
+        category: conversational-quality
+        metrics:
+          - context_awareness
+        tags:
+          - gaussia
+          - context
+        primary_score:
+          metric: context_awareness
+          lower_is_better: false
+      - id: conversational
+        name: Conversational
+        description: Conversational-quality scoring over conversational turns
+        category: conversational-quality
+        metrics:
+          - conversational_memory
+          - conversational_language
+          - conversational_quality_maxim
+          - conversational_quantity_maxim
+          - conversational_relation_maxim
+          - conversational_manner_maxim
+          - conversational_sensibleness
+        tags:
+          - gaussia
+          - conversational
+        primary_score:
+          metric: conversational_sensibleness
+          lower_is_better: false
+      - id: agentic
+        name: Agentic
+        description: Ground-truth agent task correctness with pass@k and pass^k
+        category: task-correctness
+        metrics:
+          - agentic_pass_at_k
+          - agentic_pass_pow_k
+          - agentic_correctness_rate
+          - agentic_correct_interactions
+          - agentic_total_interactions
+        tags:
+          - gaussia
+          - agentic
+        primary_score:
+          metric: agentic_pass_at_k
+          lower_is_better: false
+      - id: bias
+        name: Bias
+        description: Bias scoring over conversational turns
+        category: safety
+        metrics:
+          - bias_score
+          - bias_rate_gender
+          - bias_rate_nationality
+          - bias_rate_race
+          - bias_rate_religion
+          - bias_rate_sexual_orientation
+        tags:
+          - gaussia
+          - bias
+        primary_score:
+          metric: bias_score
+          lower_is_better: true
+      - id: toxicity
+        name: Toxicity
+        description: Toxicity/DIDT scoring over conversational turns
+        category: safety
+        metrics:
+          - toxicity_didt
+          - toxicity_dr
+          - toxicity_asb
+          - toxicity_dto
+        tags:
+          - gaussia
+          - toxicity
+        primary_score:
+          metric: toxicity_didt
+          lower_is_better: true
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gaussia-evalhub.evalhubName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+    app.kubernetes.io/component: evalhub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: evalhub
+  template:
+    metadata:
+      labels:
+        {{- include "gaussia-evalhub.labels" . | nindent 8 }}
+        app.kubernetes.io/component: evalhub
+    spec:
+      serviceAccountName: {{ include "gaussia-evalhub.platformServiceAccountName" . }}
+      containers:
+        - name: evalhub
+          image: "{{ .Values.platform.evalhub.image.repository }}:{{ .Values.platform.evalhub.image.tag }}"
+          imagePullPolicy: {{ .Values.platform.evalhub.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: {{ include "gaussia-evalhub.mlflowTrackingUri" . | quote }}
+            - name: MLFLOW_WORKSPACE
+              value: {{ include "gaussia-evalhub.mlflowWorkspace" . | quote }}
+            - name: MLFLOW_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+          volumeMounts:
+            - name: evalhub-config
+              mountPath: /app/config/config.yaml
+              subPath: config.yaml
+            {{- if .Values.platform.provider.enabled }}
+            - name: evalhub-providers
+              mountPath: /app/config/providers/gaussia.yaml
+              subPath: gaussia.yaml
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.platform.evalhub.resources | nindent 12 }}
+      volumes:
+        - name: evalhub-config
+          configMap:
+            name: {{ include "gaussia-evalhub.fullname" . }}-evalhub-config
+        {{- if .Values.platform.provider.enabled }}
+        - name: evalhub-providers
+          configMap:
+            name: {{ include "gaussia-evalhub.fullname" . }}-evalhub-providers
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gaussia-evalhub.evalhubName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: evalhub
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+{{- if .Values.platform.evalhub.route.enabled }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "gaussia-evalhub.evalhubName" . }}
+  labels:
+    {{- include "gaussia-evalhub.labels" . | nindent 4 }}
+spec:
+  to:
+    kind: Service
+    name: {{ include "gaussia-evalhub.evalhubName" . }}
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+{{- end }}
+{{- end }}
+{{- end }}

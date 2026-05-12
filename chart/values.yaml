@@ -1,0 +1,131 @@
+job:
+  enabled: true
+
+image:
+  repository: registry.access.redhat.com/ubi9/python-312
+  tag: latest
+  pullPolicy: IfNotPresent
+
+packageSpec: "gaussia[evalhub]"
+evalhubSdkSpec: "eval-hub-sdk[client]==0.1.5"
+
+quickstart:
+  fixture: first-line-support
+  benchmarks: humanity
+  uniqueRun: false
+  runSuffix: ""
+  evalhubReadyTimeoutSeconds: "600"
+  mlflowReadyTimeoutSeconds: "600"
+  waitForMlflow: ""
+
+evalhub:
+  baseUrl: ""
+  authToken: ""
+  existingSecret: ""
+  authTokenKey: "EVALHUB_AUTH_TOKEN"
+  tenant: ""
+  insecure: "true"
+  experimentName: "gaussia-agent-evaluation"
+
+evaluatedModel:
+  name: ""
+  url: ""
+
+platform:
+  enabled: true
+  serviceAccountName: ""
+  mlflow:
+    enabled: true
+    create: true
+    name: "mlflow"
+    trackingUri: ""
+    workspace: ""
+    rbacNamespace: ""
+    insecureSkipVerify: true
+    serviceAlias:
+      enabled: false
+      externalName: ""
+    storage:
+      storageClassName: ""
+      size: 10Gi
+    route:
+      enabled: true
+  evalhub:
+    enabled: true
+    name: ""
+    image:
+      repository: docker.io/alquimiaai/eval-hub
+      tag: latest
+      pullPolicy: Always
+    route:
+      enabled: true
+    database:
+      url: "file:/tmp/evalhub.db?cache=shared"
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  provider:
+    enabled: true
+    id: gaussia
+    title: Gaussia
+    image:
+      fullReference: ""
+      repository: docker.io/alquimiaai/gaussia-provider
+      tag: latest
+      pullPolicy: IfNotPresent
+    packageSpec: ""
+    evalhubSdkSpec: ""
+    cacheRoot: /tmp/gaussia-cache
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 6Gi
+    judge:
+      model: ""
+      apiKey: ""
+      baseUrl: ""
+      temperature: "0.0"
+      useStructuredOutput: "true"
+      bosJsonClause: ""
+      eosJsonClause: ""
+    agentic:
+      k: "3"
+      threshold: "0.7"
+      toolThreshold: "1.0"
+    guardian:
+      model: ""
+      tokenizerModel: ""
+      apiKey: ""
+      baseUrl: ""
+      temperature: "0.01"
+      logprobs: "false"
+      chatCompletions: "false"
+    toxicity:
+      embeddingModel: "all-MiniLM-L6-v2"
+      statisticalMode: "frequentist"
+
+serviceAccount:
+  create: true
+  name: ""
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+
+extraEnv: {}
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
