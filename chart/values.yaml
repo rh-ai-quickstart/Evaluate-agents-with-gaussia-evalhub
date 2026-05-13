@@ -6,7 +6,7 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
-packageSpec: "gaussia[evalhub]"
+packageSpec: "gaussia[evalhub]==1.0.0b2"
 evalhubSdkSpec: "eval-hub-sdk[client]==0.1.5"
 
 quickstart:
@@ -77,8 +77,8 @@ platform:
       repository: docker.io/alquimiaai/gaussia-provider
       tag: latest
       pullPolicy: IfNotPresent
-    packageSpec: ""
-    evalhubSdkSpec: ""
+    packageSpec: "gaussia[evalhub]==1.0.0b2"
+    evalhubSdkSpec: "eval-hub-sdk[adapter]==0.1.5"
     cacheRoot: /tmp/gaussia-cache
     resources:
       requests:
