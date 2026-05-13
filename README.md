@@ -142,7 +142,7 @@ With `quickstart.benchmarks=auto`, the included fixtures create one EvalHub job,
 - OpenShift CLI `oc`.
 - Red Hat OpenShift 4.18+.
 - Red Hat OpenShift AI 2.16+ with the MLflow custom resource available.
-- A public release of `gaussia[evalhub]`.
+- The `gaussia[evalhub]` prerelease pinned by the chart until the next stable Gaussia release.
 - Optional judge and guardian API credentials for model-backed benchmarks.
 
 ### Required user permissions
@@ -497,7 +497,8 @@ The provider container runs the [Gaussia] EvalHub adapter with:
 python -m gaussia.integrations.evalhub.adapter
 ```
 
-By default, the chart uses a provider image with the [Gaussia] EvalHub adapter already installed. Override `platform.provider.packageSpec` and `platform.provider.evalhubSdkSpec` only when you want the provider pod to install packages at startup.
+By default, the chart uses the provider image and installs the pinned `gaussia[evalhub]` prerelease at startup so the image can run `gaussia.integrations.evalhub.adapter`.
+Override `platform.provider.packageSpec` and `platform.provider.evalhubSdkSpec` when you want to test a different provider package.
 Use `platform.provider.image.fullReference` when you need to pin the provider to an internal image registry digest.
 
 ### Model and run metadata
