@@ -1,0 +1,19 @@
+ARG BASE_IMAGE=docker.io/alquimiaai/gaussia-provider@sha256:758c38247a9d9671a56aa6c0661a3a160056bccfb2527d9de22cf34083e9c0c2
+
+FROM ${BASE_IMAGE}
+
+USER 0
+
+RUN python -m pip install --no-cache-dir --no-deps --force-reinstall \
+      "gaussia==1.0.0b2" \
+    && python -m pip install --no-cache-dir \
+      "eval-hub-sdk[adapter]==0.1.5" \
+    && python -c "import gaussia; import gaussia.integrations.evalhub.adapter as adapter; print(gaussia.__version__, adapter.GaussiaEvalHubAdapter.__name__)"
+
+RUN mkdir -p /tmp/gaussia-cache \
+    && chgrp -R 0 /tmp/gaussia-cache \
+    && chmod -R g=u /tmp/gaussia-cache
+
+USER 1001
+
+CMD ["python", "-m", "gaussia.integrations.evalhub.adapter"]
