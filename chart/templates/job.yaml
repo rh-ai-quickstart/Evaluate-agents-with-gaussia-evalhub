@@ -25,7 +25,16 @@ spec:
             - -lc
           args:
             - |
-              python -m pip install --no-cache-dir "${GAUSSIA_PACKAGE_SPEC}" "${EVALHUB_SDK_SPEC}"
+              packages=()
+              if [ -n "${GAUSSIA_PACKAGE_SPEC}" ]; then
+                packages+=("${GAUSSIA_PACKAGE_SPEC}")
+              fi
+              if [ -n "${EVALHUB_SDK_SPEC}" ]; then
+                packages+=("${EVALHUB_SDK_SPEC}")
+              fi
+              if [ "${#packages[@]}" -gt 0 ]; then
+                python -m pip install --no-cache-dir "${packages[@]}"
+              fi
               python /quickstart/run_quickstart.py
           env:
             - name: GAUSSIA_PACKAGE_SPEC

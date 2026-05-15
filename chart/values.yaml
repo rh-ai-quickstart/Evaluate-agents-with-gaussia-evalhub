@@ -6,7 +6,7 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
-packageSpec: "gaussia[evalhub]==1.0.0b2"
+packageSpec: ""
 evalhubSdkSpec: "eval-hub-sdk[client]==0.1.5"
 
 quickstart:

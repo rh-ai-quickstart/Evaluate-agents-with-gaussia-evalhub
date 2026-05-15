@@ -236,7 +236,11 @@ Available fixtures:
 
 ### Step 3 - Install the evaluation platform
 
-Install the quickstart platform once. This creates EvalHub, the [Gaussia] provider registration, and MLflow in the same namespace. Jobs will be launched separately in the next steps:
+Install the quickstart platform once. This creates EvalHub, the [Gaussia] provider registration, and MLflow in the same namespace. Jobs will be launched separately in the next steps.
+
+Use one of the following install variants. Do not run more than one `helm install gaussia-evalhub ...` command with the same release name; use `helm upgrade` if the release already exists.
+
+Default self-contained install:
 
 ```bash
 helm install gaussia-evalhub ./chart \
@@ -244,7 +248,7 @@ helm install gaussia-evalhub ./chart \
   --set job.enabled=false
 ```
 
-If the namespace already has an OpenShift AI MLflow instance named `mlflow`, use it instead of creating a new one:
+If the namespace already has an OpenShift AI MLflow instance named `mlflow`, install with MLflow creation disabled:
 
 ```bash
 helm install gaussia-evalhub ./chart \
@@ -253,7 +257,7 @@ helm install gaussia-evalhub ./chart \
   --set platform.mlflow.create=false
 ```
 
-If MLflow is shared from another namespace, keep the EvalHub tenant as the quickstart namespace and create a local `mlflow` service alias that points to the shared service:
+If MLflow is shared from another namespace, install with a local `mlflow` service alias that points to the shared service:
 
 ```bash
 export MLFLOW_NAMESPACE="redhat-ods-applications"
@@ -268,6 +272,8 @@ helm install gaussia-evalhub ./chart \
   --set platform.mlflow.workspace="${NAMESPACE}" \
   --set platform.mlflow.rbacNamespace="${NAMESPACE}"
 ```
+
+If you already installed the release and need to switch to shared MLflow, run the same command with `helm upgrade` instead of `helm install`.
 
 Wait for EvalHub to be ready:
 
