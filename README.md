@@ -286,7 +286,9 @@ oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
 Launch a quickstart Job as a separate release against the installed EvalHub service:
 
 ```bash
-helm install gaussia-evalhub-run-001 ./chart \
+RUN_NAME="gaussia-evalhub-run-humanity-$(date +%H%M%S)"
+
+helm install "${RUN_NAME}" ./chart \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -299,12 +301,12 @@ helm install gaussia-evalhub-run-001 ./chart \
 Watch only that run:
 
 ```bash
-oc logs job/gaussia-evalhub-run-001-submit -n "${NAMESPACE}" -f
+oc logs job/${RUN_NAME}-submit -n "${NAMESPACE}" -f
 ```
 
 The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, [Gaussia] provider execution, and MLflow run logging.
 
-Use a new release name for each run, such as `gaussia-evalhub-run-002`, or uninstall the previous run release before reusing its name.
+Use a new `RUN_NAME` for each run, or uninstall the previous run release before reusing its name.
 
 ### Step 5 - Run the full benchmark suite
 
@@ -338,7 +340,9 @@ helm upgrade gaussia-evalhub ./chart \
 Then launch an all-benchmark run as a separate Job release:
 
 ```bash
-helm install gaussia-evalhub-run-all-001 ./chart \
+RUN_NAME="gaussia-evalhub-run-all-$(date +%H%M%S)"
+
+helm install "${RUN_NAME}" ./chart \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -371,7 +375,7 @@ Use these checks to confirm the quickstart completed:
 
 ```bash
 oc get mlflow,deploy,svc,route,jobs,pods -n "${NAMESPACE}"
-oc logs job/gaussia-evalhub-run-001-submit -n "${NAMESPACE}"
+oc logs job/${RUN_NAME}-submit -n "${NAMESPACE}"
 ```
 
 In EvalHub, confirm that the selected fixture created one top-level job. With `quickstart.benchmarks=auto`, the included fixtures create six benchmark jobs.
@@ -394,8 +398,8 @@ Expected results:
 Remove any run releases you created:
 
 ```bash
-helm uninstall gaussia-evalhub-run-001 --namespace "${NAMESPACE}"
-helm uninstall gaussia-evalhub-run-all-001 --namespace "${NAMESPACE}"
+helm list --namespace "${NAMESPACE}"
+helm uninstall "${RUN_NAME}" --namespace "${NAMESPACE}"
 ```
 
 Remove the platform release:
