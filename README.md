@@ -154,8 +154,6 @@ With `quickstart.benchmarks=auto`, the included fixtures create one EvalHub job,
 
 ## Deploy
 
-### Deploy with Make
-
 The repository includes a `Makefile` that wraps the Helm and `oc` commands below. Use it when you want repeatable, copy-paste-free deploys from the project root.
 
 **Prerequisites:** `oc`, `helm`, and `make` on your `PATH`; you are logged in to your OpenShift cluster (`oc login`). For model-backed benchmarks, complete [Step 1](#step-1---deploy-judge-and-guardian-models) and fill `.env` before `make run-all`.
