@@ -1,12 +1,13 @@
-# Measure agent quality with Gaussia and EvalHub
+# Scaling enterprise AI fleets with Gaussia and EvalHub
 
-Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversations with repeatable [Gaussia] benchmarks, EvalHub jobs, and MLflow metrics.
+Use this AI quickstart on Red Hat® OpenShift® AI to evaluate autonomous agent conversations with repeatable [Gaussia] benchmarks, EvalHub orchestration, and MLflow run history.
 
 ## Table of contents
 
 - [Detailed description](#detailed-description)
   - [The challenge](#the-challenge)
   - [Our solution](#our-solution)
+  - [Enterprise architecture](#enterprise-architecture)
   - [Metric families](#gaussia-metric-families)
   - [What you'll build](#what-youll-build)
   - [See it in action](#see-it-in-action)
@@ -24,6 +25,7 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversatio
   - [Step 6 - Validate results](#step-6---validate-results)
   - [Step 7 - Clean up](#step-7---clean-up)
   - [Optional - Use existing EvalHub and MLflow](#optional---use-existing-evalhub-and-mlflow)
+  - [Troubleshooting](#troubleshooting)
 - [References](#references)
 - [Technical details](#technical-details)
   - [Payload contract](#payload-contract)
@@ -35,26 +37,39 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate agent conversatio
 
 ## Detailed description
 
-This AI quickstart helps platform, product, and model teams measure agent quality with repeatable evaluation jobs. It uses [Gaussia] as the evaluation provider, EvalHub as the job orchestration layer, and MLflow as the metrics and run history backend.
+This AI quickstart helps platform, product, and model teams measure autonomous agent quality before agent updates reach production. It uses [Gaussia] as the evaluation provider, EvalHub as the job orchestration layer, and MLflow as the metrics and run history backend.
 
-The included scenarios evaluate agents in first-line support, retail assistance, and root-cause analysis workflows. The same pattern applies to IT service desk agents, incident response assistants, customer support agents, and internal operations agents.
+The included scenarios evaluate agents in first-line support, retail assistance, and root-cause analysis workflows. The same pattern applies to IT service desk agents, incident response assistants, customer support agents, and internal operations agents running as part of a larger enterprise AI fleet.
 
 ### The challenge
 
-Agentic systems are hard to assess with manual review alone. A support agent may sound helpful in one response while losing context, giving inconsistent guidance, or drifting into weaker behavior over a longer session.
+Building one agent in a notebook is straightforward. Scaling a fleet of agents across support, retail, SRE, and internal operations workflows is a different engineering problem. Once agents execute repeated workflows for real users, manual review cannot reliably catch context loss, inconsistent guidance, safety regressions, or behavior drift across longer sessions.
 
-Teams need a repeatable way to answer practical release questions:
+Teams need a repeatable way to answer practical release and governance questions:
 
 - Did the new agent version preserve context across the full conversation?
 - Which benchmark changed after a prompt, model, or retrieval update?
 - Can product and engineering teams inspect results in the same place?
 - Which model or agent version produced the evaluated conversation?
+- Did the agent introduce attribute-level bias, toxic language, or harmful associations that simple keyword filters would miss?
 
 ### Our solution
 
-This quickstart turns a fixture-based agent conversation into an EvalHub job and evaluates it with [Gaussia] benchmarks. EvalHub fans out benchmark work, the [Gaussia] provider computes metrics, and MLflow records the evaluated model, dataset, source, tags, metrics, and artifacts.
+This quickstart turns fixture-based agent conversations into EvalHub jobs and evaluates them with [Gaussia] benchmarks. EvalHub fans out benchmark work, the [Gaussia] provider computes metrics, and MLflow records the evaluated model, dataset, source, tags, metrics, and artifacts.
 
-The primary flow is fully contained in the Red Hat OpenShift AI environment created by the quickstart: a submit Job sends `dataset + metadata` to EvalHub, EvalHub runs the [Gaussia] provider, and MLflow stores the evaluation history.
+The primary flow is self-contained in the Red Hat OpenShift AI environment created by the quickstart: a submit Job sends `dataset + metadata` to EvalHub, EvalHub runs the [Gaussia] provider, and MLflow stores the evaluation history. This gives teams a repeatable evaluation stack that can run inside the same OpenShift boundary as their AI workloads.
+
+### Enterprise architecture
+
+This quickstart demonstrates the evaluation layer of a three-tier enterprise agentic stack:
+
+| Layer | Role in the stack | Quickstart component |
+| --- | --- | --- |
+| Red Hat OpenShift | Provides the enterprise Kubernetes foundation for namespace isolation, service discovery, routes, RBAC, and workload execution. | Helm-deployed services, Jobs, Routes, ServiceAccounts, and RoleBindings. |
+| Red Hat OpenShift AI | Provides the MLOps layer for model endpoints, experiment tracking, and run history. | MLflow, optional judge and guardian model endpoints, and OpenShift AI model serving. |
+| Automated behavioral evaluation | Converts agent conversations into repeatable benchmark jobs and records structured evaluation evidence. | EvalHub orchestration, [Gaussia] provider execution, fixture datasets, and MLflow metrics. |
+
+The quickstart intentionally starts with public scenario fixtures instead of a live runtime dependency. That makes the evaluation pipeline easy to reproduce first. The same EvalHub, [Gaussia], and MLflow pattern can then be connected to live agent runtimes that emit conversation datasets.
 
 ### Gaussia metric families
 
@@ -86,10 +101,10 @@ The `humanity` benchmark can run without external judge credentials. The `contex
 
 By completing this quickstart, you will:
 
-- Deploy a namespace-scoped evaluation stack with MLflow, EvalHub, the [Gaussia] provider registration, and a quickstart Job.
-- Submit a live EvalHub job for a deterministic agent conversation fixture without relying on a pre-existing EvalHub service.
+- Deploy a namespace-scoped OpenShift AI evaluation stack with MLflow, EvalHub, the [Gaussia] provider registration, and quickstart Jobs.
+- Submit deterministic agent conversation fixtures as EvalHub jobs without relying on a pre-existing EvalHub service.
 - Run the included scenario fixtures with three default benchmarks or six benchmarks when `quickstart.benchmarks=auto`.
-- Confirm EvalHub benchmark fan-out and MLflow metric tracking.
+- Confirm EvalHub benchmark fan-out and MLflow metric tracking for evaluated agent versions, datasets, and metric families.
 
 ### See it in action
 
@@ -124,14 +139,14 @@ With `quickstart.benchmarks=auto`, the included fixtures create one EvalHub job,
 
 ### Architecture diagrams
 
-![Architecture diagram showing an agent conversation fixture sent to EvalHub, evaluated by the provider, and logged to MLflow](docs/images/gaussia-evalhub-architecture.svg)
+![Architecture diagram showing an agent conversation fixture submitted to EvalHub on OpenShift AI, evaluated by the Gaussia provider, and logged to MLflow](docs/images/gaussia-evalhub-architecture.svg)
 
 **Flow summary:**
 
 1. The quickstart loads a public agent conversation fixture as a [Gaussia]-compatible dataset.
 2. The quickstart submits an EvalHub job with one benchmark entry per selected [Gaussia] metric family.
 3. EvalHub starts the [Gaussia] provider adapter with `python -m gaussia.integrations.evalhub.adapter`.
-4. The provider evaluates the dataset, reports results to EvalHub, and logs metrics, datasets, sources, and model metadata to MLflow.
+4. The provider evaluates the dataset inside the OpenShift AI environment, reports results to EvalHub, and logs metrics, datasets, sources, and model metadata to MLflow.
 
 ## Requirements
 
@@ -295,51 +310,74 @@ Available fixtures:
 
 ### Step 3 - Install the evaluation platform
 
-Install the quickstart platform once. This creates EvalHub, the [Gaussia] provider registration, and MLflow in the same namespace. Jobs will be launched separately in the next steps.
+Install the quickstart platform once. This creates EvalHub, the [Gaussia] provider registration, and an MLflow instance named `mlflow` in the same namespace. Jobs will be launched separately in the next steps.
 
-Use one of the following install variants. Do not run more than one `helm install gaussia-evalhub ...` command with the same release name; use `helm upgrade` if the release already exists.
+Use this self-contained install for the standard quickstart path. Do not also run the MLflow variants below unless you intentionally want to use an existing MLflow service.
 
 Default self-contained install:
 
 ```bash
-helm install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
+  --create-namespace \
   --set job.enabled=false
 ```
 
-If the namespace already has an OpenShift AI MLflow instance named `mlflow`, install with MLflow creation disabled:
+Wait for EvalHub and MLflow to be available before running an evaluation:
 
 ```bash
-helm install gaussia-evalhub ./chart \
+oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
+oc get mlflow mlflow -n "${NAMESPACE}"
+oc get svc mlflow -n "${NAMESPACE}"
+```
+
+If `oc get svc mlflow -n "${NAMESPACE}"` does not return a service, do not run the evaluation job yet. EvalHub must be able to resolve `https://mlflow.${NAMESPACE}.svc:8443` from inside the cluster.
+
+#### Variant: use an MLflow instance that already exists in the same namespace
+
+Use this only when the target namespace already has an OpenShift AI MLflow instance named `mlflow`:
+
+```bash
+helm upgrade --install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
+  --create-namespace \
   --set job.enabled=false \
   --set platform.mlflow.create=false
 ```
 
-If MLflow is shared from another namespace, install with a local `mlflow` service alias that points to the shared service:
+#### Variant: use an MLflow instance from another namespace
+
+Use this only when MLflow is intentionally shared from another namespace. First find the real service name and namespace:
 
 ```bash
-export MLFLOW_NAMESPACE="redhat-ods-applications"
+oc get svc -A | grep -i mlflow
+oc get mlflow -A
+```
 
-helm install gaussia-evalhub ./chart \
+Then install EvalHub with a local `mlflow` service alias. Keep `trackingUri` pointed at the local alias in the quickstart namespace; only `serviceAlias.externalName` points to the real shared MLflow service.
+
+```bash
+export MLFLOW_NAMESPACE="<mlflow-service-namespace>"
+export MLFLOW_SERVICE="<mlflow-service-name>"
+
+helm upgrade --install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
+  --create-namespace \
   --set job.enabled=false \
   --set platform.mlflow.create=false \
   --set platform.mlflow.serviceAlias.enabled=true \
-  --set platform.mlflow.serviceAlias.externalName="mlflow.${MLFLOW_NAMESPACE}.svc.cluster.local" \
-  --set platform.mlflow.trackingUri="https://mlflow.${MLFLOW_NAMESPACE}.svc:8443" \
+  --set platform.mlflow.serviceAlias.externalName="${MLFLOW_SERVICE}.${MLFLOW_NAMESPACE}.svc.cluster.local" \
+  --set platform.mlflow.trackingUri="https://mlflow.${NAMESPACE}.svc:8443" \
   --set platform.mlflow.workspace="${NAMESPACE}" \
   --set platform.mlflow.rbacNamespace="${NAMESPACE}"
 ```
 
-If you already installed the release and need to switch to shared MLflow, run the same command with `helm upgrade` instead of `helm install`.
-
 Makefile equivalents: `make install`, `make install-no-mlflow`, `make install-shared-mlflow`, and `make wait-evalhub`.
 
-Wait for EvalHub to be ready:
+Verify the alias resolves in the quickstart namespace before running an evaluation:
 
 ```bash
-oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
+oc get svc mlflow -n "${NAMESPACE}"
 ```
 
 ### Step 4 - Run the first evaluation
@@ -510,6 +548,38 @@ uv run \
     --unique-run
 ```
 
+### Troubleshooting
+
+#### EvalHub returns `400 Bad Request` when submitting a job
+
+Check the EvalHub pod logs first:
+
+```bash
+oc logs deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
+```
+
+If the log includes an error like this, the failure is MLflow connectivity, not the evaluation payload:
+
+```text
+lookup mlflow.<namespace>.svc ... no such host
+```
+
+Verify the MLflow service that EvalHub is configured to use:
+
+```bash
+helm get values gaussia-evalhub -n "${NAMESPACE}" --all | grep -E "mlflow|trackingUri|serviceAlias|rbacNamespace|workspace" -A3 -B3
+oc get svc -A | grep -i mlflow
+oc get mlflow -A
+```
+
+For the self-contained path, EvalHub should use the MLflow service in the quickstart namespace:
+
+```text
+https://mlflow.<quickstart-namespace>.svc:8443
+```
+
+For shared MLflow, create the local `mlflow` service alias shown in Step 3 and keep `platform.mlflow.trackingUri` pointed at `https://mlflow.${NAMESPACE}.svc:8443`.
+
 ## References
 
 - [Gaussia documentation](https://github.com/gaussia-labs/pygaussia)
@@ -603,11 +673,11 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 
 ## Tags
 
-- **Title:** Measure agent quality with Gaussia and EvalHub
-- **Description:** Evaluate agent conversations with repeatable [Gaussia] benchmarks, EvalHub jobs, and MLflow metrics on Red Hat OpenShift AI.
+- **Title:** Scaling enterprise AI fleets with Gaussia and EvalHub
+- **Description:** Evaluate autonomous agent conversations with repeatable [Gaussia] benchmarks, EvalHub orchestration, and MLflow run history on Red Hat OpenShift AI.
 - **Business challenge:** Adopt and scale AI
 - **Product:** OpenShift AI, OpenShift
-- **Use case:** Agent evaluation, model observability, continuous improvement
+- **Use case:** Agent evaluation, model observability, governance, continuous improvement
 - **Contributor org:** Alquimia AI
 
 [Gaussia]: https://github.com/gaussia-labs/pygaussia
