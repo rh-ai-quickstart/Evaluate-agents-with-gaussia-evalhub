@@ -29,6 +29,9 @@ metadata:
   labels:
     {{- include "gaussia-evalhub.labels" . | nindent 4 }}
 spec:
+  backendStoreUri: {{ .Values.platform.mlflow.backendStoreUri | quote }}
+  artifactsDestination: {{ .Values.platform.mlflow.artifactsDestination | quote }}
+  serveArtifacts: {{ .Values.platform.mlflow.serveArtifacts }}
   storage:
     {{- if .Values.platform.mlflow.storage.storageClassName }}
     storageClassName: {{ .Values.platform.mlflow.storage.storageClassName | quote }}
@@ -38,7 +41,6 @@ spec:
     resources:
       requests:
         storage: {{ .Values.platform.mlflow.storage.size | quote }}
-  serveArtifacts: true
 {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -181,10 +183,7 @@ data:
           - /bin/bash
           - -lc
           - |
-            if [ -n "${GAUSSIA_PACKAGE_SPEC}${EVALHUB_SDK_SPEC}" ]; then
-              python -m pip install --no-cache-dir ${GAUSSIA_PACKAGE_SPEC} ${EVALHUB_SDK_SPEC}
-            fi
-            python -m gaussia.integrations.evalhub.adapter
+            {{ include "gaussia-evalhub.providerEntrypoint" . | nindent 12 }}
         env:
           - name: GAUSSIA_PACKAGE_SPEC
             value: {{ .Values.platform.provider.packageSpec | quote }}
@@ -210,6 +209,8 @@ data:
             value: {{ .Values.platform.mlflow.insecureSkipVerify | quote }}
           - name: GAUSSIA_JUDGE_MODEL
             value: {{ .Values.platform.provider.judge.model | quote }}
+          - name: GAUSSIA_JUDGE_MODEL_PROVIDER
+            value: {{ .Values.platform.provider.judge.modelProvider | quote }}
           - name: GAUSSIA_JUDGE_API_KEY
             value: {{ .Values.platform.provider.judge.apiKey | quote }}
           - name: GAUSSIA_JUDGE_BASE_URL

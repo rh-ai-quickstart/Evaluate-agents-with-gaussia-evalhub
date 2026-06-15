@@ -255,6 +255,7 @@ Add the resulting values to `.env`:
 
 ```bash
 GAUSSIA_JUDGE_MODEL="<judge-served-model-name>"
+GAUSSIA_JUDGE_MODEL_PROVIDER="openai"
 GAUSSIA_JUDGE_BASE_URL="https://<judge-route>/v1"
 GAUSSIA_JUDGE_API_KEY="<judge-token>"
 GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT="false"
@@ -265,6 +266,8 @@ GAUSSIA_GUARDIAN_BASE_URL="https://<guardian-route>/v1"
 GAUSSIA_GUARDIAN_API_KEY="<guardian-token>"
 GAUSSIA_GUARDIAN_CHAT_COMPLETIONS="true"
 ```
+
+Set `GAUSSIA_JUDGE_MODEL_PROVIDER` to the LangChain provider that matches your judge endpoint. Use `openai` for OpenShift AI or LiteLLM routes that expose an OpenAI-compatible `/v1` API. Custom served model names such as `llama-scout-17b` require this setting because LangChain cannot infer the provider from the model name alone.
 
 If you already have compatible judge and guardian endpoints, use those values instead.
 
@@ -345,9 +348,9 @@ helm upgrade --install gaussia-evalhub ./chart \
   --set platform.mlflow.create=false
 ```
 
-#### Variant: use an MLflow instance from another namespace
+#### Variant: use an MLflow instance from another namespace or running Open Shift AI 3.4+
 
-Use this only when MLflow is intentionally shared from another namespace. First find the real service name and namespace:
+Use this only when MLflow is intentionally shared from another namespace. This is always the case for 3.4+ based deployments. First find the real service name and namespace:
 
 ```bash
 oc get svc -A | grep -i mlflow
@@ -357,8 +360,9 @@ oc get mlflow -A
 Then install EvalHub with a local `mlflow` service alias. Keep `trackingUri` pointed at the local alias in the quickstart namespace; only `serviceAlias.externalName` points to the real shared MLflow service.
 
 ```bash
-export MLFLOW_NAMESPACE="<mlflow-service-namespace>"
-export MLFLOW_SERVICE="<mlflow-service-name>"
+export MLFLOW_NAMESPACE="redhat-ods-applications"
+export MLFLOW_SERVICE="mlflow"
+export NAMESPACE="gaussia-evalhub-quickstart"
 
 helm upgrade --install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
@@ -367,7 +371,7 @@ helm upgrade --install gaussia-evalhub ./chart \
   --set platform.mlflow.create=false \
   --set platform.mlflow.serviceAlias.enabled=true \
   --set platform.mlflow.serviceAlias.externalName="${MLFLOW_SERVICE}.${MLFLOW_NAMESPACE}.svc.cluster.local" \
-  --set platform.mlflow.trackingUri="https://mlflow.${NAMESPACE}.svc:8443" \
+  --set platform.mlflow.trackingUri="https://mlflow.${MLFLOW_NAMESPACE}.svc.cluster.local:8443" \
   --set platform.mlflow.workspace="${NAMESPACE}" \
   --set platform.mlflow.rbacNamespace="${NAMESPACE}"
 ```
@@ -394,7 +398,8 @@ helm install "${RUN_NAME}" ./chart \
   --set quickstart.benchmarks=humanity \
   --set quickstart.uniqueRun=true \
   --set evalhub.baseUrl="http://gaussia-evalhub-evalhub:8080" \
-  --set evalhub.tenant="${NAMESPACE}"
+  --set evalhub.tenant="${NAMESPACE}" \
+  --set mlflow.create=false
 ```
 
 Watch only that run:
@@ -422,10 +427,21 @@ set +a
 Update the provider registration with the model-backed benchmark settings:
 
 ```bash
+export NAMESPACE="gaussia-evalhub-quickstart"
+export MLFLOW_NAMESPACE="redhat-ods-applications"
+export MLFLOW_SERVICE="mlflow"
+set -a; source .env; set +a
 helm upgrade gaussia-evalhub ./chart \
+  --reuse-values \
   --namespace "${NAMESPACE}" \
   --set job.enabled=false \
+  --set mlflow.create=true \
+  --set platform.mlflow.create=false \
+  --set platform.mlflow.serviceAlias.enabled=true \
+  --set platform.mlflow.serviceAlias.externalName="${MLFLOW_SERVICE}.${MLFLOW_NAMESPACE}.svc.cluster.local" \
+  --set platform.mlflow.trackingUri="https://mlflow.${MLFLOW_NAMESPACE}.svc.cluster.local:8443" \
   --set-string platform.provider.judge.model="${GAUSSIA_JUDGE_MODEL}" \
+  --set-string platform.provider.judge.modelProvider="${GAUSSIA_JUDGE_MODEL_PROVIDER:-openai}" \
   --set-string platform.provider.judge.baseUrl="${GAUSSIA_JUDGE_BASE_URL}" \
   --set-string platform.provider.judge.apiKey="${GAUSSIA_JUDGE_API_KEY}" \
   --set-string platform.provider.guardian.model="${GAUSSIA_GUARDIAN_MODEL}" \
@@ -452,7 +468,8 @@ helm install "${RUN_NAME}" ./chart \
   --set quickstart.benchmarks=auto \
   --set quickstart.uniqueRun=true \
   --set evalhub.baseUrl="http://gaussia-evalhub-evalhub:8080" \
-  --set evalhub.tenant="${NAMESPACE}"
+  --set evalhub.tenant="${NAMESPACE}" \
+  --set mlflow.create=false
 ```
 
 Expected output includes:

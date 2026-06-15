@@ -57,7 +57,22 @@ namespace: env-check ## Create or select the OpenShift project
 install: env-check namespace ## Install EvalHub, Gaussia provider, and MLflow (default)
 	@$(call with_env,helm upgrade --install "$(RELEASE)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
-		--set job.enabled=false)
+		--set job.enabled=false \
+		--set-string platform.provider.judge.model="$${GAUSSIA_JUDGE_MODEL}" \
+		--set-string platform.provider.judge.modelProvider="$${GAUSSIA_JUDGE_MODEL_PROVIDER:-openai}" \
+		--set-string platform.provider.judge.baseUrl="$${GAUSSIA_JUDGE_BASE_URL}" \
+		--set-string platform.provider.judge.apiKey="$${GAUSSIA_JUDGE_API_KEY}" \
+		--set-string platform.provider.judge.bosJsonClause="$${GAUSSIA_JUDGE_BOS_JSON_CLAUSE}" \
+		--set-string platform.provider.judge.eosJsonClause="$${GAUSSIA_JUDGE_EOS_JSON_CLAUSE}" \
+		--set-string platform.provider.judge.useStructuredOutput="$${GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT}" \
+		--set-string platform.provider.guardian.model="$${GAUSSIA_GUARDIAN_MODEL}" \
+		--set-string platform.provider.guardian.tokenizerModel="$${GAUSSIA_GUARDIAN_TOKENIZER_MODEL}" \
+		--set-string platform.provider.guardian.baseUrl="$${GAUSSIA_GUARDIAN_BASE_URL}" \
+		--set-string platform.provider.guardian.apiKey="$${GAUSSIA_GUARDIAN_API_KEY}" \
+		--set-string platform.provider.guardian.chatCompletions="$${GAUSSIA_GUARDIAN_CHAT_COMPLETIONS}" \
+		--set-string platform.provider.agentic.k="$${GAUSSIA_AGENTIC_K}" \
+		--set-string platform.provider.agentic.threshold="$${GAUSSIA_AGENTIC_THRESHOLD}" \
+		--set-string platform.provider.agentic.toolThreshold="$${GAUSSIA_AGENTIC_TOOL_THRESHOLD}")
 
 install-no-mlflow: env-check namespace ## Install when namespace already has an MLflow CR named mlflow
 	@$(call with_env,helm upgrade --install "$(RELEASE)" "$(CHART_DIR)" \
@@ -81,11 +96,23 @@ wait-evalhub: ## Wait until the EvalHub deployment is ready
 
 upgrade-provider: env-check ## Apply judge/guardian settings from .env to the Helm release
 	@$(call with_env,helm upgrade "$(RELEASE)" "$(CHART_DIR)" \
+		--reuse-values \
 		--namespace "$(NAMESPACE)" \
 		--set job.enabled=false \
+		--set mlflow.create=true \
+		--set platform.mlflow.create=false \
+		--set platform.mlflow.serviceAlias.enabled=true \
+		--set platform.mlflow.serviceAlias.externalName="mlflow.$(MLFLOW_NAMESPACE).svc.cluster.local" \
+		--set-string platform.mlflow.trackingUri="$${MLFLOW_TRACKING_URI:-https://mlflow.$(MLFLOW_NAMESPACE).svc:8443}" \
+		--set platform.mlflow.workspace="$(NAMESPACE)" \
+		--set platform.mlflow.rbacNamespace="$(NAMESPACE)" \
 		--set-string platform.provider.judge.model="$${GAUSSIA_JUDGE_MODEL}" \
+		--set-string platform.provider.judge.modelProvider="$${GAUSSIA_JUDGE_MODEL_PROVIDER:-openai}" \
 		--set-string platform.provider.judge.baseUrl="$${GAUSSIA_JUDGE_BASE_URL}" \
 		--set-string platform.provider.judge.apiKey="$${GAUSSIA_JUDGE_API_KEY}" \
+		--set-string platform.provider.judge.bosJsonClause="$${GAUSSIA_JUDGE_BOS_JSON_CLAUSE}" \
+		--set-string platform.provider.judge.eosJsonClause="$${GAUSSIA_JUDGE_EOS_JSON_CLAUSE}" \
+		--set-string platform.provider.judge.useStructuredOutput="$${GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT}" \
 		--set-string platform.provider.guardian.model="$${GAUSSIA_GUARDIAN_MODEL}" \
 		--set-string platform.provider.guardian.tokenizerModel="$${GAUSSIA_GUARDIAN_TOKENIZER_MODEL}" \
 		--set-string platform.provider.guardian.baseUrl="$${GAUSSIA_GUARDIAN_BASE_URL}" \
@@ -94,6 +121,8 @@ upgrade-provider: env-check ## Apply judge/guardian settings from .env to the He
 		--set-string platform.provider.agentic.k="$${GAUSSIA_AGENTIC_K}" \
 		--set-string platform.provider.agentic.threshold="$${GAUSSIA_AGENTIC_THRESHOLD}" \
 		--set-string platform.provider.agentic.toolThreshold="$${GAUSSIA_AGENTIC_TOOL_THRESHOLD}")
+	@oc rollout restart deploy/$(RELEASE)-evalhub -n "$(NAMESPACE)"
+	@oc rollout status deploy/$(RELEASE)-evalhub -n "$(NAMESPACE)"
 
 ##@ Evaluation runs
 
@@ -101,6 +130,7 @@ run-humanity: env-check ## Submit a humanity-only quickstart job (no judge/guard
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=humanity \
 		--set quickstart.uniqueRun=true \
@@ -109,10 +139,11 @@ run-humanity: env-check ## Submit a humanity-only quickstart job (no judge/guard
 	@echo "Run release: $(RUN_NAME)"
 	@echo "Follow logs: make logs RUN_NAME=$(RUN_NAME)"
 
-run-all: env-check upgrade-provider ## Submit all benchmarks (requires judge/guardian in .env)
+run-all: env-check upgrade-provider wait-evalhub ## Submit all benchmarks (requires judge/guardian in .env)
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=auto \
 		--set quickstart.uniqueRun=true \
@@ -125,6 +156,7 @@ install-external: env-check namespace ## Job-only install against existing EvalH
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=auto \
 		--set quickstart.uniqueRun=true \
@@ -159,7 +191,11 @@ uninstall-run: ## Remove a run release (set RUN_NAME)
 	@helm uninstall "$(RUN_NAME)" --namespace "$(NAMESPACE)"
 
 uninstall: ## Remove the Helm release (EvalHub, provider, MLflow)
-	@helm uninstall "$(RELEASE)" --namespace "$(NAMESPACE)" || true
+	@if helm status "$(RELEASE)" -n "$(NAMESPACE)" >/dev/null 2>&1; then \
+		helm uninstall "$(RELEASE)" -n "$(NAMESPACE)"; \
+	else \
+		echo "Helm release $(RELEASE) not found in $(NAMESPACE) — nothing to uninstall"; \
+	fi
 
 cleanup-namespace: uninstall ## Delete the OpenShift project (destructive)
 	@oc delete project "$(NAMESPACE)" --wait=false

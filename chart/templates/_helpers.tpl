@@ -88,3 +88,21 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end -}}
+
+{{- define "gaussia-evalhub.providerEntrypoint" -}}
+export GAUSSIA_JUDGE_MODEL='{{ .Values.platform.provider.judge.model | replace `'` `'\''` }}'
+export GAUSSIA_JUDGE_MODEL_PROVIDER='{{ .Values.platform.provider.judge.modelProvider | replace `'` `'\''` }}'
+export GAUSSIA_JUDGE_API_KEY='{{ .Values.platform.provider.judge.apiKey | replace `'` `'\''` }}'
+export GAUSSIA_JUDGE_BASE_URL='{{ .Values.platform.provider.judge.baseUrl | replace `'` `'\''` }}'
+export GAUSSIA_JUDGE_BOS_JSON_CLAUSE='{{ .Values.platform.provider.judge.bosJsonClause | replace `'` `'\''` }}'
+export GAUSSIA_JUDGE_EOS_JSON_CLAUSE='{{ .Values.platform.provider.judge.eosJsonClause | replace `'` `'\''` }}'
+export GAUSSIA_GUARDIAN_MODEL='{{ .Values.platform.provider.guardian.model | replace `'` `'\''` }}'
+export GAUSSIA_GUARDIAN_TOKENIZER_MODEL='{{ .Values.platform.provider.guardian.tokenizerModel | replace `'` `'\''` }}'
+export GAUSSIA_GUARDIAN_API_KEY='{{ .Values.platform.provider.guardian.apiKey | replace `'` `'\''` }}'
+export GAUSSIA_GUARDIAN_BASE_URL='{{ .Values.platform.provider.guardian.baseUrl | replace `'` `'\''` }}'
+export GAUSSIA_GUARDIAN_CHAT_COMPLETIONS='{{ .Values.platform.provider.guardian.chatCompletions | replace `'` `'\''` }}'
+if [ -n "${GAUSSIA_PACKAGE_SPEC}${EVALHUB_SDK_SPEC}" ]; then
+  python -m pip install --no-cache-dir ${GAUSSIA_PACKAGE_SPEC} ${EVALHUB_SDK_SPEC}
+fi
+python -m gaussia.integrations.evalhub.adapter
+{{- end -}}
