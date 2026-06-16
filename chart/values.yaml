@@ -89,6 +89,7 @@ platform:
         memory: 6Gi
     judge:
       model: ""
+      modelProvider: ""
       apiKey: ""
       baseUrl: ""
       temperature: "0.0"

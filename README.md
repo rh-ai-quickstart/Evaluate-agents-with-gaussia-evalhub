@@ -257,7 +257,9 @@ Add the resulting values to `.env`:
 GAUSSIA_JUDGE_MODEL="<judge-served-model-name>"
 GAUSSIA_JUDGE_BASE_URL="https://<judge-route>/v1"
 GAUSSIA_JUDGE_API_KEY="<judge-token>"
+GAUSSIA_JUDGE_MODEL_PROVIDER=""
 GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT="false"
+GAUSSIA_PROVIDER_PACKAGE_SPEC="gaussia[evalhub]==1.0.0b2"
 
 GAUSSIA_GUARDIAN_MODEL="<guardian-served-model-name>"
 GAUSSIA_GUARDIAN_TOKENIZER_MODEL="ibm-granite/granite-guardian-3.1-2b"
@@ -424,8 +426,11 @@ Update the provider registration with the model-backed benchmark settings:
 ```bash
 helm upgrade gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
+  --reuse-values \
   --set job.enabled=false \
+  --set-string platform.provider.packageSpec="${GAUSSIA_PROVIDER_PACKAGE_SPEC:-gaussia[evalhub]==1.0.0b2}" \
   --set-string platform.provider.judge.model="${GAUSSIA_JUDGE_MODEL}" \
+  --set-string platform.provider.judge.modelProvider="${GAUSSIA_JUDGE_MODEL_PROVIDER}" \
   --set-string platform.provider.judge.baseUrl="${GAUSSIA_JUDGE_BASE_URL}" \
   --set-string platform.provider.judge.apiKey="${GAUSSIA_JUDGE_API_KEY}" \
   --set-string platform.provider.guardian.model="${GAUSSIA_GUARDIAN_MODEL}" \
@@ -439,6 +444,20 @@ helm upgrade gaussia-evalhub ./chart \
 ```
 
 Makefile equivalent: `make upgrade-provider` then `make run-all`.
+
+The default quickstart path targets judge and guardian models served in OpenShift AI through OpenAI-compatible endpoints. If your served model works with the default LangChain provider detection, leave `GAUSSIA_JUDGE_MODEL_PROVIDER` empty and keep `GAUSSIA_PROVIDER_PACKAGE_SPEC` unchanged.
+
+To use a different LangChain provider, install that provider package in the Gaussia provider pod and set the provider explicitly. For LiteLLM-based MaaS models, use:
+
+```bash
+GAUSSIA_PROVIDER_PACKAGE_SPEC="gaussia[evalhub]==1.0.0b2 langchain-litellm"
+GAUSSIA_JUDGE_MODEL_PROVIDER="litellm"
+GAUSSIA_JUDGE_MODEL="openai/<served-model-name>"
+GAUSSIA_JUDGE_BASE_URL="https://<maas-route>/v1"
+GAUSSIA_JUDGE_API_KEY="<maas-token>"
+```
+
+Use the model name format expected by the selected provider. For LiteLLM with an OpenAI-compatible endpoint, the `openai/<served-model-name>` prefix tells LiteLLM which provider implementation to use.
 
 Then launch an all-benchmark run as a separate Job release:
 
@@ -645,7 +664,8 @@ python -m gaussia.integrations.evalhub.adapter
 ```
 
 By default, the chart uses `docker.io/alquimiaai/gaussia-provider:1.0.0b2`, which includes the [Gaussia] EvalHub adapter, and also pins `gaussia[evalhub]==1.0.0b2` at startup so benchmark dependencies stay explicit.
-Override `platform.provider.packageSpec` and `platform.provider.evalhubSdkSpec` only when you want the provider pod to install a different provider package at startup.
+Override `platform.provider.packageSpec` when the provider pod needs extra LangChain connector packages, such as `langchain-litellm` for LiteLLM. Set `platform.provider.judge.modelProvider` when LangChain cannot infer the provider from the model name.
+Override `platform.provider.evalhubSdkSpec` only when you want the provider pod to install a different EvalHub adapter SDK at startup.
 Use `platform.provider.image.fullReference` when you need to pin the provider to an internal image registry digest.
 
 ### Model and run metadata

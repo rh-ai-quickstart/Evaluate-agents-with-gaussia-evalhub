@@ -72,7 +72,7 @@ install-shared-mlflow: env-check namespace ## Install with MLflow service alias 
 		--set platform.mlflow.create=false \
 		--set platform.mlflow.serviceAlias.enabled=true \
 		--set platform.mlflow.serviceAlias.externalName="mlflow.$(MLFLOW_NAMESPACE).svc.cluster.local" \
-		--set platform.mlflow.trackingUri="https://mlflow.$(MLFLOW_NAMESPACE).svc:8443" \
+		--set platform.mlflow.trackingUri="https://mlflow.$(NAMESPACE).svc:8443" \
 		--set platform.mlflow.workspace="$(NAMESPACE)" \
 		--set platform.mlflow.rbacNamespace="$(NAMESPACE)")
 
@@ -82,8 +82,11 @@ wait-evalhub: ## Wait until the EvalHub deployment is ready
 upgrade-provider: env-check ## Apply judge/guardian settings from .env to the Helm release
 	@$(call with_env,helm upgrade "$(RELEASE)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
+		--reuse-values \
 		--set job.enabled=false \
+		--set-string platform.provider.packageSpec="$${GAUSSIA_PROVIDER_PACKAGE_SPEC:-gaussia[evalhub]==1.0.0b2}" \
 		--set-string platform.provider.judge.model="$${GAUSSIA_JUDGE_MODEL}" \
+		--set-string platform.provider.judge.modelProvider="$${GAUSSIA_JUDGE_MODEL_PROVIDER}" \
 		--set-string platform.provider.judge.baseUrl="$${GAUSSIA_JUDGE_BASE_URL}" \
 		--set-string platform.provider.judge.apiKey="$${GAUSSIA_JUDGE_API_KEY}" \
 		--set-string platform.provider.guardian.model="$${GAUSSIA_GUARDIAN_MODEL}" \

@@ -214,6 +214,8 @@ data:
             value: {{ .Values.platform.provider.judge.apiKey | quote }}
           - name: GAUSSIA_JUDGE_BASE_URL
             value: {{ .Values.platform.provider.judge.baseUrl | quote }}
+          - name: GAUSSIA_JUDGE_MODEL_PROVIDER
+            value: {{ .Values.platform.provider.judge.modelProvider | quote }}
           - name: GAUSSIA_JUDGE_TEMPERATURE
             value: {{ .Values.platform.provider.judge.temperature | quote }}
           - name: GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT
