@@ -133,6 +133,7 @@ upgrade-provider: env-check env-verify-provider ## Apply judge/guardian settings
 	@$(call with_env,helm upgrade "$(RELEASE)" "$(CHART_DIR)" \
 		--reuse-values \
 		--namespace "$(NAMESPACE)" \
+		--reuse-values \
 		--set job.enabled=false \
 		$(HELM_SHARED_MLFLOW_SETS) \
 		--set-string platform.mlflow.trackingUri="$${MLFLOW_TRACKING_URI:-https://mlflow.$(MLFLOW_NAMESPACE).svc.cluster.local:8443}" \

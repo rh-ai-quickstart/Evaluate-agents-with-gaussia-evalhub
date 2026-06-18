@@ -355,7 +355,9 @@ GAUSSIA_JUDGE_MODEL="<judge-served-model-name>"
 GAUSSIA_JUDGE_MODEL_PROVIDER="openai"
 GAUSSIA_JUDGE_BASE_URL="https://<judge-route>/v1"
 GAUSSIA_JUDGE_API_KEY="<judge-token>"
+GAUSSIA_JUDGE_MODEL_PROVIDER=""
 GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT="false"
+GAUSSIA_PROVIDER_PACKAGE_SPEC="gaussia[evalhub]==1.0.0b2"
 
 GAUSSIA_GUARDIAN_MODEL="<guardian-served-model-name>"
 GAUSSIA_GUARDIAN_TOKENIZER_MODEL="ibm-granite/granite-guardian-3.1-2b"
@@ -788,7 +790,8 @@ python -m gaussia.integrations.evalhub.adapter
 ```
 
 By default, the chart uses `docker.io/alquimiaai/gaussia-provider:1.0.0b2`, which includes the [Gaussia] EvalHub adapter, and also pins `gaussia[evalhub]==1.0.0b2` at startup so benchmark dependencies stay explicit.
-Override `platform.provider.packageSpec` and `platform.provider.evalhubSdkSpec` only when you want the provider pod to install a different provider package at startup.
+Override `platform.provider.packageSpec` when the provider pod needs extra LangChain connector packages, such as `langchain-litellm` for LiteLLM. Set `platform.provider.judge.modelProvider` when LangChain cannot infer the provider from the model name.
+Override `platform.provider.evalhubSdkSpec` only when you want the provider pod to install a different EvalHub adapter SDK at startup.
 Use `platform.provider.image.fullReference` when you need to pin the provider to an internal image registry digest.
 
 ### Model and run metadata
