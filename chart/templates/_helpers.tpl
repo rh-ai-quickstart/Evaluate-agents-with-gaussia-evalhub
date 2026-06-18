@@ -89,6 +89,10 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end -}}
 
+{{- define "gaussia-evalhub.providersChecksum" -}}
+{{- printf "%s" .Values.platform.provider | toYaml | sha256sum -}}
+{{- end -}}
+
 {{- define "gaussia-evalhub.providerEntrypoint" -}}
 export GAUSSIA_JUDGE_MODEL='{{ .Values.platform.provider.judge.model | replace `'` `'\''` }}'
 export GAUSSIA_JUDGE_MODEL_PROVIDER='{{ .Values.platform.provider.judge.modelProvider | replace `'` `'\''` }}'
@@ -101,6 +105,8 @@ export GAUSSIA_GUARDIAN_TOKENIZER_MODEL='{{ .Values.platform.provider.guardian.t
 export GAUSSIA_GUARDIAN_API_KEY='{{ .Values.platform.provider.guardian.apiKey | replace `'` `'\''` }}'
 export GAUSSIA_GUARDIAN_BASE_URL='{{ .Values.platform.provider.guardian.baseUrl | replace `'` `'\''` }}'
 export GAUSSIA_GUARDIAN_CHAT_COMPLETIONS='{{ .Values.platform.provider.guardian.chatCompletions | replace `'` `'\''` }}'
+export GAUSSIA_PROVIDER_PACKAGE_SPEC='{{ .Values.platform.provider.packageSpec | replace `'` `'\''` }}'
+GAUSSIA_PACKAGE_SPEC="${GAUSSIA_PACKAGE_SPEC:-${GAUSSIA_PROVIDER_PACKAGE_SPEC}}"
 if [ -n "${GAUSSIA_PACKAGE_SPEC}${EVALHUB_SDK_SPEC}" ]; then
   python -m pip install --no-cache-dir ${GAUSSIA_PACKAGE_SPEC} ${EVALHUB_SDK_SPEC}
 fi

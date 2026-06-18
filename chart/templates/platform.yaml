@@ -364,6 +364,10 @@ spec:
       labels:
         {{- include "gaussia-evalhub.labels" . | nindent 8 }}
         app.kubernetes.io/component: evalhub
+      {{- if .Values.platform.provider.enabled }}
+      annotations:
+        checksum/evalhub-providers: {{ include "gaussia-evalhub.providersChecksum" . }}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "gaussia-evalhub.platformServiceAccountName" . }}
       containers:

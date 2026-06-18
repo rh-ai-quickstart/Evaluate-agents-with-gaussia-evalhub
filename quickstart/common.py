@@ -36,7 +36,7 @@ def _load_env_file(path: Path) -> None:
 
         key, value = line.split("=", 1)
         key = key.strip()
-        if not key or key in os.environ:
+        if not key or os.environ.get(key):
             continue
         os.environ[key] = _clean_env_value(value.strip())
 
