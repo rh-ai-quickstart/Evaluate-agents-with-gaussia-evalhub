@@ -29,6 +29,7 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate autonomous agent 
   - [Step 6 - Validate results](#step-6---validate-results)
   - [Step 7 - Clean up](#step-7---clean-up)
   - [Optional - Use existing EvalHub and MLflow](#optional---use-existing-evalhub-and-mlflow)
+  - [Advanced — manual Helm](#advanced--manual-helm)
   - [Troubleshooting](#troubleshooting)
 - [References](#references)
 - [Technical details](#technical-details)
@@ -216,7 +217,7 @@ make env-verify-provider   # fails if judge/guardian placeholders remain
 make env-verify-external   # fails if EVALHUB_* placeholders remain (external flow)
 ```
 
-The Makefile loads `.env` automatically for Helm commands (same as `set -a; source .env; set +a` in the manual steps below). Judge and guardian variables can stay as placeholders for `make install` and `make run-humanity`; `make run-all` and `make upgrade-provider` require real values.
+The Makefile loads `.env` automatically. Judge and guardian variables can stay as placeholders for `make install` and `make run-humanity`; `make run-all` and `make upgrade-provider` require real values.
 
 | Variable group | Required when | Purpose |
 | --- | --- | --- |
@@ -253,10 +254,10 @@ After install, confirm EvalHub and MLflow are reachable:
 
 ```bash
 make wait-evalhub
-oc get svc mlflow -n "${NAMESPACE:-gaussia-evalhub-quickstart}"
+make validate
 ```
 
-Manual Helm equivalents for each variant are in [Step 3](#step-3---install-the-evaluation-platform).
+For manual `helm`/`oc` commands without Make, see [Advanced — manual Helm](#advanced--manual-helm).
 
 ### Run evaluations
 
@@ -290,7 +291,7 @@ make list-releases
 make validate
 ```
 
-Manual Helm equivalents: [Step 4](#step-4---run-the-first-evaluation) and [Step 5](#step-5---run-the-full-benchmark-suite).
+See [Step 4](#step-4---run-the-first-evaluation) and [Step 5](#step-5---run-the-full-benchmark-suite) for step-by-step run instructions.
 
 ### Uninstall
 
@@ -315,18 +316,7 @@ make uninstall
 make cleanup-namespace
 ```
 
-Manual equivalents:
-
-```bash
-helm list --namespace "${NAMESPACE}"
-helm uninstall "${RUN_NAME}" --namespace "${NAMESPACE}"
-helm uninstall gaussia-evalhub --namespace "${NAMESPACE}"
-oc delete project "${NAMESPACE}"
-```
-
 See also [Step 7 - Clean up](#step-7---clean-up).
-
-The manual `helm`/`oc` steps in the sections below match the Makefile targets if you prefer not to use Make.
 
 ### Step 1 - Deploy judge and guardian models
 
@@ -384,29 +374,22 @@ git clone https://github.com/rh-ai-quickstart/Evaluate-agents-with-gaussia-evalh
 cd Evaluate-agents-with-gaussia-evalhub
 ```
 
-Create a local environment file for EvalHub, MLflow, judge, and guardian settings:
+Create and inspect the environment file:
 
 ```bash
 make env-init
-# or: cp .env.example .env
+make env-show
 ```
 
-Edit `.env` with your service URLs and credentials. Inspect loaded values with `make env-show`. The local submitter and Makefile load `.env` automatically. For manual Helm commands, load it into your shell first:
+Edit `.env` with your service URLs and credentials. The Makefile and local submitter load `.env` automatically.
+
+Create or select the OpenShift namespace:
 
 ```bash
-set -a
-source .env
-set +a
+make namespace
 ```
 
-Create a namespace for the quickstart:
-
-```bash
-export NAMESPACE="gaussia-evalhub-quickstart"
-oc new-project "${NAMESPACE}"
-```
-
-Or: `make namespace` (uses `NAMESPACE` from the Makefile, default `gaussia-evalhub-quickstart`).
+Optional override: `make namespace NAMESPACE=my-eval-namespace`
 
 Available fixtures:
 
@@ -418,9 +401,7 @@ Available fixtures:
 
 ### Step 3 - Install the evaluation platform
 
-Install the quickstart platform once. This creates EvalHub, the [Gaussia] provider registration, and MLflow connectivity. Jobs are launched separately in the next steps.
-
-**Makefile (recommended):**
+Install the quickstart platform once. This creates EvalHub, the [Gaussia] provider registration, and MLflow connectivity. Evaluation jobs are separate releases installed in the next steps.
 
 | Path | Command |
 | --- | --- |
@@ -428,9 +409,154 @@ Install the quickstart platform once. This creates EvalHub, the [Gaussia] provid
 | Local MLflow CR in the namespace | `make install-standalone` |
 | Namespace already has `mlflow` CR | `make install-no-mlflow` |
 
-#### Manual: local MLflow CR (self-contained namespace)
+Override shared MLflow location when needed:
 
-Use this on OpenShift AI 2.16 or when you want MLflow created in the quickstart namespace:
+```bash
+make install MLFLOW_NAMESPACE=redhat-ods-applications MLFLOW_SERVICE=mlflow
+```
+
+When judge and guardian values are in `.env`, they are applied at install time. To refresh provider settings later without a new run, use `make upgrade-provider`.
+
+Wait for EvalHub before running an evaluation:
+
+```bash
+make wait-evalhub
+make validate
+```
+
+If MLflow connectivity fails on the shared-MLflow path, confirm the alias service exists:
+
+```bash
+oc get svc mlflow -n "${NAMESPACE:-gaussia-evalhub-quickstart}"
+```
+
+To locate shared MLflow in your cluster (no Make equivalent):
+
+```bash
+oc get svc -A | grep -i mlflow
+oc get mlflow -A
+```
+
+### Step 4 - Run the first evaluation
+
+Submit a humanity-only evaluation against the installed EvalHub service:
+
+```bash
+make run-humanity
+```
+
+Optional overrides:
+
+```bash
+make run-humanity FIXTURE=retail RUN_NAME=my-humanity-run
+```
+
+`make run-humanity` installs the run release, waits for the submit Job and benchmark Job to finish, and prints the run release name.
+
+Follow submit logs or re-wait for an existing run:
+
+```bash
+make logs RUN_NAME=<name-from-run-output>
+make wait-run RUN_NAME=<name>
+```
+
+The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, [Gaussia] provider execution, and MLflow run logging.
+
+Use a new `RUN_NAME` for each run, or remove the previous run first: `make uninstall-run RUN_NAME=...`
+
+### Step 5 - Run the full benchmark suite
+
+Complete [Step 1](#step-1---deploy-judge-and-guardian-models) and fill judge and guardian values in `.env`, then verify:
+
+```bash
+make env-verify-provider
+```
+
+Run all benchmarks (`make run-all` applies provider settings from `.env`, submits the job, and waits for completion):
+
+```bash
+make run-all RUN_NAME=gaussia-evalhub-run-all-$(date +%H%M%S)
+```
+
+Optional overrides: `FIXTURE=retail`, or run provider update separately before a manual re-run:
+
+```bash
+make upgrade-provider
+make run-all RUN_NAME=my-run-all
+```
+
+Expected submit output includes:
+
+```json
+{
+  "status": "submitted",
+  "job_id": "...",
+  "benchmark_ids": [
+    "humanity",
+    "context",
+    "conversational",
+    "agentic",
+    "bias",
+    "toxicity"
+  ]
+}
+```
+
+### Step 6 - Validate results
+
+Use these checks to confirm the quickstart completed:
+
+```bash
+make validate
+make logs RUN_NAME=<your-run-release>
+```
+
+In EvalHub, confirm that the selected fixture created one top-level job. With `quickstart.benchmarks=auto`, the included fixtures create six benchmark jobs.
+
+In MLflow, confirm that each benchmark run includes:
+
+- dataset name beginning with `gaussia-`.
+- source name `gaussia.integrations.evalhub.adapter`.
+- evaluated model name from fixture metadata, or from `GAUSSIA_EVALUATED_MODEL_NAME` when you override it.
+- tags for `assistant_id`, `session_id`, `stream_id`, and `control_id`.
+
+Expected results:
+
+![Expected MLflow runs table showing benchmark runs with dataset, source, evaluated model, and metric pack columns populated](docs/images/mlflow-expected-runs-table.png)
+
+![Expected MLflow chart view grouped by metric pack with context and conversational metrics](docs/images/mlflow-expected-metric-charts.png)
+
+### Step 7 - Clean up
+
+See [Uninstall](#uninstall). Summary:
+
+```bash
+make list-releases
+make uninstall-run RUN_NAME=<your-run-release>
+make uninstall
+make cleanup-namespace   # optional; deletes the OpenShift project
+```
+
+### Optional - Use existing EvalHub and MLflow
+
+If your platform team already provides EvalHub, MLflow, and a registered `gaussia` provider, configure `EVALHUB_*` in `.env`, then:
+
+```bash
+make env-verify-external
+make install-external FIXTURE=first-line-support RUN_NAME=my-external-run
+```
+
+Submit from your workstation instead of a cluster Job:
+
+```bash
+make run-local FIXTURE=first-line-support
+```
+
+### Advanced — manual Helm
+
+Use these commands only when you cannot use the Makefile. Load `.env` first: `set -a; source .env; set +a`.
+
+**Install — local MLflow CR** (equivalent to `make install-standalone`):
 
 ```bash
 helm upgrade --install gaussia-evalhub ./chart \
@@ -439,21 +565,11 @@ helm upgrade --install gaussia-evalhub ./chart \
   --set job.enabled=false
 ```
 
-#### Manual: shared MLflow (OpenShift AI 3.4+)
-
-Use this when MLflow runs in another namespace (typically `redhat-ods-applications`). First find the real service name and namespace:
+**Install — shared MLflow** (equivalent to `make install`):
 
 ```bash
-oc get svc -A | grep -i mlflow
-oc get mlflow -A
-```
-
-Then install EvalHub with a local `mlflow` service alias in the quickstart namespace:
-
-```bash
-export MLFLOW_NAMESPACE="redhat-ods-applications"
-export MLFLOW_SERVICE="mlflow"
-export NAMESPACE="gaussia-evalhub-quickstart"
+export MLFLOW_NAMESPACE="${MLFLOW_NAMESPACE:-redhat-ods-applications}"
+export MLFLOW_SERVICE="${MLFLOW_SERVICE:-mlflow}"
 
 helm upgrade --install gaussia-evalhub ./chart \
   --namespace "${NAMESPACE}" \
@@ -468,20 +584,7 @@ helm upgrade --install gaussia-evalhub ./chart \
   --set platform.mlflow.rbacNamespace="${NAMESPACE}"
 ```
 
-When judge and guardian values are in `.env`, pass them with the `--set-string platform.provider.*` flags shown in [Step 5](#step-5---run-the-full-benchmark-suite), or run `make upgrade-provider` after install.
-
-Wait for EvalHub to be available before running an evaluation:
-
-```bash
-oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
-oc get svc mlflow -n "${NAMESPACE}"
-```
-
-If `oc get svc mlflow -n "${NAMESPACE}"` does not return a service on the shared-MLflow path, create the alias install above before running jobs. EvalHub provider pods must resolve MLflow at `https://mlflow.${NAMESPACE}.svc:8443` (local alias) or the shared service URI you configured.
-
-#### Variant: use an MLflow instance that already exists in the same namespace
-
-Use this only when the target namespace already has an OpenShift AI MLflow instance named `mlflow`:
+**Install — existing `mlflow` CR in namespace** (equivalent to `make install-no-mlflow`):
 
 ```bash
 helm upgrade --install gaussia-evalhub ./chart \
@@ -492,21 +595,7 @@ helm upgrade --install gaussia-evalhub ./chart \
   --set platform.mlflow.create=false
 ```
 
-Makefile equivalents: `make install`, `make install-standalone`, `make install-no-mlflow`, and `make wait-evalhub`.
-
-Verify MLflow resolves in the quickstart namespace before running an evaluation:
-
-```bash
-oc get svc mlflow -n "${NAMESPACE}"
-```
-
-### Step 4 - Run the first evaluation
-
-Launch a quickstart Job as a separate release against the installed EvalHub service.
-
-**Makefile:** `make run-humanity` submits the job, waits for the submit Job and humanity benchmark to complete, and prints the run release name. Optional: `FIXTURE=retail RUN_NAME=my-run`.
-
-Manual install:
+**Run — humanity** (equivalent to `make run-humanity`; then `make wait-run RUN_NAME=...`):
 
 ```bash
 RUN_NAME="gaussia-evalhub-run-humanity-$(date +%H%M%S)"
@@ -522,41 +611,9 @@ helm install "${RUN_NAME}" ./chart \
   --set mlflow.create=false
 ```
 
-Wait for completion manually:
+**Run — all benchmarks** (equivalent to `make upgrade-provider` + `make run-all`):
 
 ```bash
-python3 quickstart/wait_run.py --namespace "${NAMESPACE}" --run-name "${RUN_NAME}"
-# or: make wait-run RUN_NAME="${RUN_NAME}"
-```
-
-Follow submit logs:
-
-```bash
-oc logs job/${RUN_NAME}-submit -n "${NAMESPACE}" -f
-# or: make logs RUN_NAME="${RUN_NAME}"
-```
-
-The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, [Gaussia] provider execution, and MLflow run logging.
-
-Use a new `RUN_NAME` for each run, or uninstall the previous run release before reusing its name (`make uninstall-run RUN_NAME=...`).
-
-### Step 5 - Run the full benchmark suite
-
-To run `context`, `conversational`, `agentic`, `bias`, and `toxicity`, use the judge and guardian endpoints from Step 1, fill their settings in `.env`, and load them into your shell:
-
-```bash
-set -a
-source .env
-set +a
-```
-
-Update the provider registration with the model-backed benchmark settings:
-
-```bash
-export NAMESPACE="gaussia-evalhub-quickstart"
-export MLFLOW_NAMESPACE="redhat-ods-applications"
-export MLFLOW_SERVICE="mlflow"
-set -a; source .env; set +a
 helm upgrade gaussia-evalhub ./chart \
   --reuse-values \
   --namespace "${NAMESPACE}" \
@@ -579,17 +636,9 @@ helm upgrade gaussia-evalhub ./chart \
   --set-string platform.provider.agentic.threshold="${GAUSSIA_AGENTIC_THRESHOLD}" \
   --set-string platform.provider.agentic.toolThreshold="${GAUSSIA_AGENTIC_TOOL_THRESHOLD}"
 
-# EvalHub reads provider settings from a mounted ConfigMap at startup.
-# Restart it after the upgrade so benchmark adapter pods get judge/guardian values.
 oc rollout restart deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
 oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
-```
 
-Makefile equivalent: `make upgrade-provider` then `make run-all` (applies provider settings, submits all benchmarks, and waits via `quickstart/wait_run.py`).
-
-Then launch an all-benchmark run as a separate Job release (if not using `make run-all`):
-
-```bash
 RUN_NAME="gaussia-evalhub-run-all-$(date +%H%M%S)"
 
 helm install "${RUN_NAME}" ./chart \
@@ -603,84 +652,10 @@ helm install "${RUN_NAME}" ./chart \
   --set mlflow.create=false
 ```
 
-Expected output includes:
-
-```json
-{
-  "status": "submitted",
-  "job_id": "...",
-  "benchmark_ids": [
-    "humanity",
-    "context",
-    "conversational",
-    "agentic",
-    "bias",
-    "toxicity"
-  ]
-}
-```
-
-### Step 6 - Validate results
-
-Use these checks to confirm the quickstart completed:
+**External EvalHub** (equivalent to `make install-external`):
 
 ```bash
-oc get mlflow,deploy,svc,route,jobs,pods -n "${NAMESPACE}"
-oc logs job/${RUN_NAME}-submit -n "${NAMESPACE}"
-```
-
-In EvalHub, confirm that the selected fixture created one top-level job. With `quickstart.benchmarks=auto`, the included fixtures create six benchmark jobs.
-
-In MLflow, confirm that each benchmark run includes:
-
-- dataset name beginning with `gaussia-`.
-- source name `gaussia.integrations.evalhub.adapter`.
-- evaluated model name from fixture metadata, or from `GAUSSIA_EVALUATED_MODEL_NAME` when you override it.
-- tags for `assistant_id`, `session_id`, `stream_id`, and `control_id`.
-
-Expected results:
-
-![Expected MLflow runs table showing benchmark runs with dataset, source, evaluated model, and metric pack columns populated](docs/images/mlflow-expected-runs-table.png)
-
-![Expected MLflow chart view grouped by metric pack with context and conversational metrics](docs/images/mlflow-expected-metric-charts.png)
-
-### Step 7 - Clean up
-
-See [Uninstall](#uninstall) for the recommended Make targets. Manual steps:
-
-Remove any run releases you created:
-
-```bash
-helm list --namespace "${NAMESPACE}"
-helm uninstall "${RUN_NAME}" --namespace "${NAMESPACE}"
-```
-
-Remove the platform release:
-
-```bash
-helm uninstall gaussia-evalhub --namespace "${NAMESPACE}"
-```
-
-Delete the namespace if it was created only for this quickstart:
-
-```bash
-oc delete project "${NAMESPACE}"
-```
-
-Makefile equivalents: `make uninstall-run RUN_NAME=...`, `make uninstall`, `make cleanup-namespace`.
-
-### Optional - Use existing EvalHub and MLflow
-
-If your platform team already provides EvalHub, MLflow, and a registered `gaussia` provider, configure `EVALHUB_BASE_URL`, `EVALHUB_AUTH_TOKEN`, and `EVALHUB_TENANT` in `.env`, verify with `make env-verify-external`, then submit a job-only release:
-
-```bash
-make install-external FIXTURE=first-line-support RUN_NAME=my-external-run
-```
-
-Manual Helm equivalent:
-
-```bash
-helm install gaussia-evalhub ./chart \
+helm install "${RUN_NAME}" ./chart \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -692,13 +667,7 @@ helm install gaussia-evalhub ./chart \
   --set evalhub.insecure=false
 ```
 
-You can also submit a live EvalHub job from your workstation (requires `EVALHUB_*` in `.env`):
-
-```bash
-make run-local FIXTURE=first-line-support
-```
-
-Manual equivalent:
+**Local submit** (equivalent to `make run-local`):
 
 ```bash
 uv run \
@@ -708,6 +677,15 @@ uv run \
     --fixture quickstart/fixtures/first-line-support.json \
     --benchmarks auto \
     --unique-run
+```
+
+**Uninstall** (equivalent to `make uninstall-run`, `make uninstall`, `make cleanup-namespace`):
+
+```bash
+helm list --namespace "${NAMESPACE}"
+helm uninstall "${RUN_NAME}" --namespace "${NAMESPACE}"
+helm uninstall gaussia-evalhub --namespace "${NAMESPACE}"
+oc delete project "${NAMESPACE}"
 ```
 
 ### Troubleshooting
@@ -740,7 +718,7 @@ For the self-contained path, EvalHub should use the MLflow service in the quicks
 https://mlflow.<quickstart-namespace>.svc:8443
 ```
 
-For shared MLflow, create the local `mlflow` service alias shown in Step 3 and keep `platform.mlflow.trackingUri` pointed at `https://mlflow.${NAMESPACE}.svc:8443`.
+For shared MLflow, run `make install` (or reinstall with `MLFLOW_NAMESPACE` set correctly) so the local `mlflow` service alias is created in the quickstart namespace.
 
 ## References
 
@@ -790,7 +768,7 @@ When every interaction includes `ground_truth_assistant`, it also includes:
 
 - `agentic`
 
-Use `quickstart.benchmarks=humanity` when you want the full EvalHub, [Gaussia], and MLflow flow without judge or guardian credentials.
+Use `make run-humanity` when you want the full EvalHub, [Gaussia], and MLflow flow without judge or guardian credentials.
 
 ### Provider registration
 
@@ -812,7 +790,7 @@ Use `platform.provider.image.fullReference` when you need to pin the provider to
 
 ### Model and run metadata
 
-The evaluated model is the agent or model version represented by the fixture, not the judge model used by a benchmark. Set it with:
+The evaluated model is the agent or model version represented by the fixture, not the judge model used by a benchmark. Set these in `.env` or export them before `make run-*`:
 
 ```bash
 export GAUSSIA_EVALUATED_MODEL_NAME="custom-agent-demo-v1"
