@@ -30,6 +30,7 @@ Use this AI quickstart on Red Hat® OpenShift® AI to evaluate autonomous agent 
   - [Step 7 - Clean up](#step-7---clean-up)
   - [Optional - Use existing EvalHub and MLflow](#optional---use-existing-evalhub-and-mlflow)
   - [Advanced — manual Helm](#advanced--manual-helm)
+  - [How it works](docs/how-it-works.md)
   - [Troubleshooting](#troubleshooting)
 - [References](#references)
 - [Technical details](#technical-details)
@@ -175,6 +176,8 @@ With `quickstart.benchmarks=auto`, the included fixtures create one EvalHub job,
 ## Deploy
 
 The repository includes a `Makefile` that wraps Helm, `oc`, and the quickstart Python helpers. Use it for repeatable deploys from the project root.
+
+For an overview of platform vs run releases, Kubernetes jobs, and expected MLflow output, see **[How it works](docs/how-it-works.md)**.
 
 ### Deploy with Make
 
@@ -806,7 +809,8 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 ├── .env.example           # Environment template (EvalHub, MLflow, judge, guardian)
 ├── Makefile               # Install, run, wait, validate, and uninstall targets
 ├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
-├── docs/                  # Architecture and results images
+├── docs/                  # Architecture images and how-it-works guide
+│   └── how-it-works.md    # What is deployed, run, and evaluated
 ├── quickstart/            # Submitter, env checks, run waiter, and scenario fixtures
 │   ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
 │   ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
