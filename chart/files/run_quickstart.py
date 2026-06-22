@@ -60,7 +60,7 @@ def submit_evalhub_job(fixture: dict[str, Any], benchmarks: list[str]) -> None:
         ),
     )
 
-    base_url = os.environ.get("EVALHUB_BASE_URL", "http://localhost:8080")
+    base_url = os.environ.get("EVALHUB_BASE_URL", "https://evalhub.apps.maas.redhatworkshops.io")
     insecure = os.environ.get("EVALHUB_INSECURE", "false").lower() == "true"
     wait_for_evalhub_ready(base_url, insecure)
     wait_for_mlflow_ready(insecure)

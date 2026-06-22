@@ -112,7 +112,7 @@ def main() -> None:
 
 def build_client_from_env() -> SyncEvalHubClient:
     return SyncEvalHubClient(
-        base_url=os.environ.get("EVALHUB_BASE_URL", "http://localhost:8080"),
+        base_url=os.environ.get("EVALHUB_BASE_URL", "https://evalhub.apps.maas.redhatworkshops.io"),
         auth_token=os.environ.get("EVALHUB_AUTH_TOKEN"),
         auth_token_path=os.environ.get("EVALHUB_AUTH_TOKEN_PATH"),
         insecure=os.environ.get("EVALHUB_INSECURE", "false").lower() == "true",

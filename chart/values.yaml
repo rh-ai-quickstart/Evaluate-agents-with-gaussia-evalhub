@@ -38,6 +38,10 @@ platform:
     enabled: true
     create: true
     name: "mlflow"
+    # Required by MLflow CR validation (OpenShift AI 3.4+).
+    backendStoreUri: "sqlite:////mlflow/mlflow.db"
+    artifactsDestination: "file:///mlflow/artifacts"
+    serveArtifacts: true
     trackingUri: ""
     workspace: ""
     rbacNamespace: ""
@@ -56,7 +60,7 @@ platform:
     image:
       repository: docker.io/alquimiaai/eval-hub
       tag: latest
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     route:
       enabled: true
     database:
@@ -74,10 +78,10 @@ platform:
     title: Gaussia
     image:
       fullReference: ""
-      repository: docker.io/alquimiaai/gaussia-provider
-      tag: 1.0.0b2
+      repository: quay.io/rh-ee-rjjohnso/gaussia
+      tag: latest
       pullPolicy: IfNotPresent
-    packageSpec: "gaussia[evalhub]==1.0.0b2"
+    packageSpec: "gaussia[evalhub]==1.0.0b2 langchain-openai"
     evalhubSdkSpec: "eval-hub-sdk[adapter]==0.1.5"
     cacheRoot: /tmp/gaussia-cache
     resources:
@@ -124,8 +128,21 @@ resources:
     cpu: "4"
     memory: "8Gi"
 
-extraEnv: {}
+mlflow:
+  # This will create the MLflow CR if enabled.
+  # This will always be deployed int he redhat-ods-applications namespace 
+  # regardless of the namespace of the chart if using ODH 3.4+.
+  create: true
+  serviceName: "mlflow"
+  storage:
+    storageClassName: ""
+    size: 10Gi
+    artifactsDestination: "file:///mlflow/artifacts"
+    backendStoreUri: "sqlite:////mlflow/mlflow.db"
+    serveArtifacts: true
 
+
+extraEnv: {}
 podAnnotations: {}
 nodeSelector: {}
 tolerations: []
