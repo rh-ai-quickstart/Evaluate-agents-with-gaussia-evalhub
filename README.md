@@ -329,10 +329,9 @@ Submit from your workstation instead of a cluster Job:
 make run-local FIXTURE=first-line-support
 ```
 
-For troubleshooting common issues, see [Troubleshooting](docs/troubleshooting.md).
-
 ## References
 
+- [Troubleshoot this quickstart](docs/troubleshooting.md)
 - [Gaussia documentation](https://github.com/gaussia-labs/pygaussia)
 - [EvalHub provider adapter entrypoint](https://github.com/gaussia-labs/pygaussia)
 - [Red Hat AI quickstarts catalog](https://docs.redhat.com/en/learn/ai-quickstarts)
