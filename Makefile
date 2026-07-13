@@ -4,13 +4,17 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-CHART_DIR        ?= ./chart
-RELEASE          ?= gaussia-evalhub
-NAMESPACE        ?= gaussia-evalhub-quickstart
-MLFLOW_NAMESPACE ?= redhat-ods-applications
-MLFLOW_SERVICE   ?= mlflow
-FIXTURE          ?= first-line-support
-EVALHUB_SVC      ?= http://gaussia-evalhub-evalhub:8080
+CHART_DIR          ?= ./chart
+RELEASE            ?= gaussia-evalhub
+NAMESPACE          ?= gaussia-evalhub-quickstart
+MLFLOW_NAMESPACE   ?= redhat-ods-applications
+MLFLOW_SERVICE     ?= mlflow
+FIXTURE            ?= first-line-support
+EVALHUB_SVC        ?= http://gaussia-evalhub-evalhub:8080
+JOB_CPU_REQUEST    ?= 250m
+JOB_MEMORY_REQUEST ?= 512Mi
+JOB_CPU_LIMIT      ?= 1
+JOB_MEMORY_LIMIT   ?= 1Gi
 
 RUN_NAME ?= gaussia-evalhub-run-$(shell date +%Y%m%d%H%M%S)
 
@@ -39,6 +43,7 @@ HELM_PROVIDER_SETS := \
 	--set-string platform.provider.judge.modelProvider="$${GAUSSIA_JUDGE_MODEL_PROVIDER:-openai}" \
 	--set-string platform.provider.judge.baseUrl="$${GAUSSIA_JUDGE_BASE_URL}" \
 	--set-string platform.provider.judge.apiKey="$${GAUSSIA_JUDGE_API_KEY}" \
+	--set-string platform.provider.judge.temperature="$${GAUSSIA_JUDGE_TEMPERATURE}" \
 	--set-string platform.provider.judge.bosJsonClause="$${GAUSSIA_JUDGE_BOS_JSON_CLAUSE}" \
 	--set-string platform.provider.judge.eosJsonClause="$${GAUSSIA_JUDGE_EOS_JSON_CLAUSE}" \
 	--set-string platform.provider.judge.useStructuredOutput="$${GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT}" \
@@ -46,6 +51,8 @@ HELM_PROVIDER_SETS := \
 	--set-string platform.provider.guardian.tokenizerModel="$${GAUSSIA_GUARDIAN_TOKENIZER_MODEL}" \
 	--set-string platform.provider.guardian.baseUrl="$${GAUSSIA_GUARDIAN_BASE_URL}" \
 	--set-string platform.provider.guardian.apiKey="$${GAUSSIA_GUARDIAN_API_KEY}" \
+	--set-string platform.provider.guardian.temperature="$${GAUSSIA_GUARDIAN_TEMPERATURE}" \
+	--set-string platform.provider.guardian.logprobs="$${GAUSSIA_GUARDIAN_LOGPROBS}" \
 	--set-string platform.provider.guardian.chatCompletions="$${GAUSSIA_GUARDIAN_CHAT_COMPLETIONS}" \
 	--set-string platform.provider.agentic.k="$${GAUSSIA_AGENTIC_K}" \
 	--set-string platform.provider.agentic.threshold="$${GAUSSIA_AGENTIC_THRESHOLD}" \
@@ -69,6 +76,10 @@ help: ## Show available targets
 	@echo "  FIXTURE=$(FIXTURE)"
 	@echo "  RUN_NAME=$(RUN_NAME)"
 	@echo "  MLFLOW_NAMESPACE=$(MLFLOW_NAMESPACE)"
+	@echo "  JOB_CPU_REQUEST=$(JOB_CPU_REQUEST)"
+	@echo "  JOB_MEMORY_REQUEST=$(JOB_MEMORY_REQUEST)"
+	@echo "  JOB_CPU_LIMIT=$(JOB_CPU_LIMIT)"
+	@echo "  JOB_MEMORY_LIMIT=$(JOB_MEMORY_LIMIT)"
 
 ##@ Setup
 
@@ -131,7 +142,6 @@ wait-evalhub: ## Wait until the EvalHub deployment is ready
 
 upgrade-provider: env-check env-verify-provider ## Apply judge/guardian settings from .env to the Helm release
 	@$(call with_env,helm upgrade "$(RELEASE)" "$(CHART_DIR)" \
-		--reuse-values \
 		--namespace "$(NAMESPACE)" \
 		--reuse-values \
 		--set job.enabled=false \
@@ -142,7 +152,7 @@ upgrade-provider: env-check env-verify-provider ## Apply judge/guardian settings
 	@$(MAKE) wait-evalhub
 
 wait-run: ## Wait for a run submit job and EvalHub benchmark jobs (set RUN_NAME)
-	@test -n "$(RUN_NAME)" || (echo "Set RUN_NAME, e.g. make wait-run RUN_NAME=gaussia-evalhub-run-all-120000" && exit 1)
+	@test "$(origin RUN_NAME)" != "file" || (echo "Set RUN_NAME, e.g. make wait-run RUN_NAME=gaussia-evalhub-run-all-120000" && exit 1)
 	@python3 quickstart/wait_run.py --namespace "$(NAMESPACE)" --run-name "$(RUN_NAME)"
 
 ##@ Evaluation runs
@@ -156,7 +166,11 @@ run-humanity: env-check ## Submit a humanity-only quickstart job (no judge/guard
 		--set quickstart.benchmarks=humanity \
 		--set quickstart.uniqueRun=true \
 		--set evalhub.baseUrl="$(EVALHUB_SVC)" \
-		--set evalhub.tenant="$(NAMESPACE)")
+		--set evalhub.tenant="$(NAMESPACE)" \
+		--set resources.requests.cpu="$(JOB_CPU_REQUEST)" \
+		--set resources.requests.memory="$(JOB_MEMORY_REQUEST)" \
+		--set resources.limits.cpu="$(JOB_CPU_LIMIT)" \
+		--set resources.limits.memory="$(JOB_MEMORY_LIMIT)")
 	@echo "Run release: $(RUN_NAME)"
 	@$(MAKE) wait-run RUN_NAME="$(RUN_NAME)"
 
@@ -169,7 +183,11 @@ run-all: env-check env-verify-provider upgrade-provider ## Submit all benchmarks
 		--set quickstart.benchmarks=auto \
 		--set quickstart.uniqueRun=true \
 		--set evalhub.baseUrl="$(EVALHUB_SVC)" \
-		--set evalhub.tenant="$(NAMESPACE)")
+		--set evalhub.tenant="$(NAMESPACE)" \
+		--set resources.requests.cpu="$(JOB_CPU_REQUEST)" \
+		--set resources.requests.memory="$(JOB_MEMORY_REQUEST)" \
+		--set resources.limits.cpu="$(JOB_CPU_LIMIT)" \
+		--set resources.limits.memory="$(JOB_MEMORY_LIMIT)")
 	@echo "Run release: $(RUN_NAME)"
 	@$(MAKE) wait-run RUN_NAME="$(RUN_NAME)"
 
@@ -184,7 +202,11 @@ install-external: env-check env-verify-external namespace ## Job-only install ag
 		--set evalhub.baseUrl="$${EVALHUB_BASE_URL}" \
 		--set evalhub.authToken="$${EVALHUB_AUTH_TOKEN}" \
 		--set evalhub.tenant="$${EVALHUB_TENANT}" \
-		--set evalhub.insecure=false)
+		--set evalhub.insecure=false \
+		--set resources.requests.cpu="$(JOB_CPU_REQUEST)" \
+		--set resources.requests.memory="$(JOB_MEMORY_REQUEST)" \
+		--set resources.limits.cpu="$(JOB_CPU_LIMIT)" \
+		--set resources.limits.memory="$(JOB_MEMORY_LIMIT)")
 	@$(MAKE) wait-run RUN_NAME="$(RUN_NAME)"
 
 run-local: env-check env-verify-external ## Submit a job from your workstation with uv (existing EvalHub)
@@ -202,14 +224,14 @@ validate: ## List platform resources in the namespace
 	@oc get mlflow,deploy,svc,route,jobs,pods -n "$(NAMESPACE)"
 
 logs: ## Follow logs for a run submit job (set RUN_NAME)
-	@test -n "$(RUN_NAME)" || (echo "Set RUN_NAME, e.g. make logs RUN_NAME=gaussia-evalhub-run-humanity-120000" && exit 1)
+	@test "$(origin RUN_NAME)" != "file" || (echo "Set RUN_NAME, e.g. make logs RUN_NAME=gaussia-evalhub-run-humanity-120000" && exit 1)
 	@oc logs "job/$(RUN_NAME)-submit" -n "$(NAMESPACE)" -f
 
 list-releases: ## List Helm releases in the namespace
 	@helm list --namespace "$(NAMESPACE)"
 
 uninstall-run: ## Remove a run release (set RUN_NAME)
-	@test -n "$(RUN_NAME)" || (echo "Set RUN_NAME" && exit 1)
+	@test "$(origin RUN_NAME)" != "file" || (echo "Set RUN_NAME" && exit 1)
 	@helm uninstall "$(RUN_NAME)" --namespace "$(NAMESPACE)"
 
 uninstall: ## Remove the Helm release (EvalHub, provider, MLflow)

@@ -125,9 +125,8 @@ GAUSSIA_JUDGE_MODEL="<judge-served-model-name>"
 GAUSSIA_JUDGE_MODEL_PROVIDER="openai"
 GAUSSIA_JUDGE_BASE_URL="https://<judge-route>/v1"
 GAUSSIA_JUDGE_API_KEY="<judge-token>"
-GAUSSIA_JUDGE_MODEL_PROVIDER=""
 GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT="false"
-GAUSSIA_PROVIDER_PACKAGE_SPEC="gaussia[evalhub]==1.0.0b2"
+GAUSSIA_PROVIDER_PACKAGE_SPEC="gaussia[evalhub]==1.0.0b2 langchain-openai"
 
 GAUSSIA_GUARDIAN_MODEL="<guardian-served-model-name>"
 GAUSSIA_GUARDIAN_TOKENIZER_MODEL="ibm-granite/granite-guardian-3.1-2b"
@@ -223,6 +222,15 @@ Optional overrides:
 ```bash
 make run-humanity FIXTURE=retail RUN_NAME=my-humanity-run
 ```
+
+Quickstart submit Job resource overrides:
+
+| Variable | Default |
+| --- | --- |
+| `JOB_CPU_REQUEST` | `250m` |
+| `JOB_MEMORY_REQUEST` | `512Mi` |
+| `JOB_CPU_LIMIT` | `1` |
+| `JOB_MEMORY_LIMIT` | `1Gi` |
 
 Available use-cases (fixtures):
 
