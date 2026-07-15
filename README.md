@@ -137,6 +137,8 @@ GAUSSIA_GUARDIAN_CHAT_COMPLETIONS="true"
 
 Set `GAUSSIA_JUDGE_MODEL_PROVIDER` to the LangChain provider that matches your judge endpoint. Use `openai` for OpenShift AI or LiteLLM routes that expose an OpenAI-compatible `/v1` API. Custom served model names such as `llama-scout-17b` require this setting because LangChain cannot infer the provider from the model name alone.
 
+Keep `GAUSSIA_GUARDIAN_CHAT_COMPLETIONS="true"` when the guardian uses Groq or another OpenAI-compatible chat endpoint. Setting it to `false` selects the legacy `/completions` endpoint, which Groq does not expose for chat models.
+
 If you already have compatible judge and guardian endpoints, use those values instead.
 
 ### Prepare the quickstart project
