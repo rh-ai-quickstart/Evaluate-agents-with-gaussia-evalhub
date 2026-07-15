@@ -38,7 +38,7 @@ HELM_SHARED_MLFLOW_SETS := \
 
 # Helm --set-string flags for judge/guardian provider settings sourced from .env.
 HELM_PROVIDER_SETS := \
-	--set-string platform.provider.packageSpec="$${GAUSSIA_PROVIDER_PACKAGE_SPEC:-gaussia[evalhub]==1.0.0b2 langchain-openai}" \
+	--set-string platform.provider.packageSpec="$${GAUSSIA_PROVIDER_PACKAGE_SPEC:-gaussia[evalhub]==1.1.0b2 langchain-openai}" \
 	--set-string platform.provider.judge.model="$${GAUSSIA_JUDGE_MODEL}" \
 	--set-string platform.provider.judge.modelProvider="$${GAUSSIA_JUDGE_MODEL_PROVIDER:-openai}" \
 	--set-string platform.provider.judge.baseUrl="$${GAUSSIA_JUDGE_BASE_URL}" \

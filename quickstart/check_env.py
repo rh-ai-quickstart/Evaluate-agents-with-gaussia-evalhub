@@ -92,7 +92,7 @@ def verify(names: tuple[str, ...], profile: str) -> int:
         provider = os.environ.get("GAUSSIA_JUDGE_MODEL_PROVIDER", "openai").strip().lower()
         package_spec = os.environ.get(
             "GAUSSIA_PROVIDER_PACKAGE_SPEC",
-            "gaussia[evalhub]==1.0.0b2 langchain-openai",
+            "gaussia[evalhub]==1.1.0b2 langchain-openai",
         )
         required = {
             "litellm": "langchain-litellm",

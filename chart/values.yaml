@@ -77,11 +77,11 @@ platform:
     id: gaussia
     title: Gaussia
     image:
-      fullReference: ""
-      repository: quay.io/rh-ee-rjjohnso/gaussia
-      tag: latest
+      fullReference: "docker.io/alquimiaai/gaussia-provider@sha256:fd12fc7f463fdea27e1f510be8f7ce8686873b183a2e789a54bc47b78d8e7cd7"
+      repository: docker.io/alquimiaai/gaussia-provider
+      tag: 1.1.0b2
       pullPolicy: IfNotPresent
-    packageSpec: "gaussia[evalhub]==1.0.0b2 langchain-openai"
+    packageSpec: "gaussia[evalhub]==1.1.0b2 langchain-openai"
     evalhubSdkSpec: "eval-hub-sdk[adapter]==0.1.5"
     cacheRoot: /tmp/gaussia-cache
     resources:
