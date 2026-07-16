@@ -11,10 +11,10 @@ MLFLOW_NAMESPACE   ?= redhat-ods-applications
 MLFLOW_SERVICE     ?= mlflow
 FIXTURE            ?= first-line-support
 EVALHUB_SVC        ?= http://gaussia-evalhub-evalhub:8080
-JOB_CPU_REQUEST    ?= 250m
-JOB_MEMORY_REQUEST ?= 512Mi
-JOB_CPU_LIMIT      ?= 1
-JOB_MEMORY_LIMIT   ?= 1Gi
+JOB_CPU_REQUEST    ?= 500m
+JOB_MEMORY_REQUEST ?= 1Gi
+JOB_CPU_LIMIT      ?= 2000m
+JOB_MEMORY_LIMIT   ?= 2Gi
 
 RUN_NAME ?= gaussia-evalhub-run-$(shell date +%Y%m%d%H%M%S)
 

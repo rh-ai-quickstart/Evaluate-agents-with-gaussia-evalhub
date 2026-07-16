@@ -67,11 +67,11 @@ platform:
       url: "file:/tmp/evalhub.db?cache=shared"
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
-      limits:
-        cpu: 1000m
+        cpu: 500m
         memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
   provider:
     enabled: true
     id: gaussia
@@ -86,11 +86,11 @@ platform:
     cacheRoot: /tmp/gaussia-cache
     resources:
       requests:
-        cpu: 250m
-        memory: 1Gi
+        cpu: 500m
+        memory: 2Gi
       limits:
-        cpu: 2000m
-        memory: 6Gi
+        cpu: 4000m
+        memory: 12Gi
     judge:
       model: ""
       modelProvider: ""
