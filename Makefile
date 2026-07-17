@@ -157,7 +157,7 @@ wait-run: ## Wait for a run submit job and EvalHub benchmark jobs (set RUN_NAME)
 
 ##@ Evaluation runs
 
-run-humanity: env-check ## Submit a humanity-only quickstart job (no judge/guardian required)
+run-humanity:
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
@@ -174,7 +174,7 @@ run-humanity: env-check ## Submit a humanity-only quickstart job (no judge/guard
 	@echo "Run release: $(RUN_NAME)"
 	@$(MAKE) wait-run RUN_NAME="$(RUN_NAME)"
 
-run-all: env-check env-verify-provider upgrade-provider ## Submit all benchmarks and wait for completion
+run-all:
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \

@@ -1,0 +1,17 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: gaussia-ui
+    app.kubernetes.io/component: gaussia-ui
+    app.kubernetes.io/instance: gaussia-ui
+  name: gaussia-ui
+  namespace: gaussia-evalhub-quickstart
+spec:
+  port:
+    targetPort: 8501-tcp
+  to:
+    kind: Service
+    name: gaussia-ui
+    weight: 100
+  wildcardPolicy: None
