@@ -279,4 +279,4 @@ If you already have EvalHub and a registered Gaussia provider (`make install-ext
 | `apps/evalhub_job_submission/wait_run.py` | Waits for submit + benchmark Jobs |
 | `apps/evalhub_job_submission/common.py` | Shared fixture loading and benchmark selection |
 | `apps/evalhub_job_submission/fixtures/` | Scenario conversation datasets |
-| `apps/ui/` | Streamlit dashboard: fixtures + EvalHub API submit/jobs (see `apps/ui/README.md`) |
+| `apps/ui/` | Streamlit dashboard: fixtures + EvalHub API submit/jobs (see [`streamlit-ui-guide.md`](streamlit-ui-guide.md), `apps/ui/README.md`) |

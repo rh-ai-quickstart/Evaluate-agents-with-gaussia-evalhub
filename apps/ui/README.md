@@ -3,6 +3,9 @@
 Streamlit dashboard for browsing scenario fixtures and submitting Gaussia EvalHub
 evaluation runs via the EvalHub API.
 
+Page-by-page walkthrough (local + OpenShift access, configuration, troubleshooting):
+**[docs/streamlit-ui-guide.md](../../docs/streamlit-ui-guide.md)**.
+
 ## What it does
 
 | Page | Purpose |
