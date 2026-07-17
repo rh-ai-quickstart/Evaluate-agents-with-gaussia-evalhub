@@ -19,8 +19,13 @@ Sidebar controls set the OpenShift namespace, Helm release name, and selected fi
 ```text
 apps/ui/
 ├── app.py                 # Entrypoint (`streamlit run app.py`)
+├── config.py              # Paths and shared UI configuration
 ├── Containerfile.ui       # Container image for the dashboard
 ├── requirements.txt
+├── clients/               # External process clients (e.g. make)
+├── components/            # Sidebar, styles, shared UI helpers
+├── views/                 # Fixtures, Run Evaluation, Run History views
+├── services/              # Fixture discovery and evaluation orchestration
 ├── .streamlit/            # Streamlit theme and server config
 └── assets/                # Logos and static assets
 ```
