@@ -1,0 +1,31 @@
+FROM registry.redhat.io/ubi10/python-314-minimal:1783485502
+
+USER 0
+
+RUN microdnf install -y --nodocs make tar gzip curl \
+    && microdnf clean all
+
+RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | VERIFY_CHECKSUM=false bash
+
+COPY oc.tar /tmp/oc.tar
+RUN tar xf /tmp/oc.tar -C /usr/local/bin oc \
+    && chmod +x /usr/local/bin/oc \
+    && rm /tmp/oc.tar
+
+WORKDIR /opt/app-root/src
+
+COPY requirements-ui.txt .
+RUN pip install --no-cache-dir -r requirements-ui.txt
+
+COPY .streamlit/ .streamlit/
+COPY assets/ assets/
+COPY quickstart/ quickstart/
+COPY Makefile .
+COPY chart/ chart/
+COPY app.py .
+
+USER 1001
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
