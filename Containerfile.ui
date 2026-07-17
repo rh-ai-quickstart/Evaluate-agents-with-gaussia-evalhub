@@ -7,9 +7,9 @@ RUN microdnf install -y --nodocs make tar gzip curl \
 
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | VERIFY_CHECKSUM=false bash
 
-ADD https://downloads-openshift-console.apps-crc.testing/amd64/linux/oc.tar /tmp/oc.tar
-COPY oc.tar /tmp/oc.tar
-RUN tar xf /tmp/oc.tar -C /usr/local/bin oc \
+ADD https://downloads-openshift-console.apps-crc.testing/amd64/linux/oc.tar /tmp/
+
+RUN mv /tmp/oc /usr/local/bin/oc \
     && chmod +x /usr/local/bin/oc \
     && rm /tmp/oc.tar
 
