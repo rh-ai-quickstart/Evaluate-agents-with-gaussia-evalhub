@@ -43,6 +43,7 @@ platform:
     artifactsDestination: "file:///mlflow/artifacts"
     serveArtifacts: true
     trackingUri: ""
+    trackingToken: ""
     workspace: ""
     rbacNamespace: ""
     insecureSkipVerify: true
@@ -141,6 +142,25 @@ mlflow:
     backendStoreUri: "sqlite:////mlflow/mlflow.db"
     serveArtifacts: true
 
+
+ui:
+  enabled: true
+  replicaCount: 1
+  name: gaussia-ui
+  image:
+    repository: quay.io/rh-ai-quickstart/alquimia-streamlit-ui
+    tag: "0.1.0"
+    pullPolicy: Always
+  # Created by the chart unless existingEnvConfigMap is set.
+  envConfigMap: ""
+  existingEnvConfigMap: ""
+  serviceAccount:
+    create: true
+    name: ocp-api-edit
+  route:
+    enabled: true
+  service:
+    port: 8501
 
 extraEnv: {}
 podAnnotations: {}

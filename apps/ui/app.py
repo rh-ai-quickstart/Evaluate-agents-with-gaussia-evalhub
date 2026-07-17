@@ -16,8 +16,9 @@ from pathlib import Path
 
 import streamlit as st
 
-PROJECT_DIR = Path(__file__).resolve().parent
-FIXTURES_DIR = PROJECT_DIR / "quickstart" / "fixtures"
+UI_DIR = Path(__file__).resolve().parent
+REPO_ROOT = UI_DIR.parents[1]
+FIXTURES_DIR = REPO_ROOT / "quickstart" / "fixtures"
 
 FIXTURE_META = {
     "first-line-support": {
@@ -100,7 +101,7 @@ def _run_make(
     extra_vars: dict[str, str] | None = None,
     output_container=None,
 ) -> tuple[int, str]:
-    cmd = ["make", "-C", str(PROJECT_DIR), target]
+    cmd = ["make", "-C", str(REPO_ROOT), target]
     if extra_vars:
         for k, v in extra_vars.items():
             cmd.append(f"{k}={v}")
@@ -118,7 +119,7 @@ def _run_make(
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            cwd=str(PROJECT_DIR),
+            cwd=str(REPO_ROOT),
         )
         for line in iter(proc.stdout.readline, ""):
             collected.append(line)
@@ -253,7 +254,7 @@ st.markdown(
 # Sidebar
 # ---------------------------------------------------------------------------
 
-ASSETS_DIR = PROJECT_DIR / "assets"
+ASSETS_DIR = UI_DIR / "assets"
 
 with st.sidebar:
     st.image(str(ASSETS_DIR / "gaussia-evalhub-logo.png"))

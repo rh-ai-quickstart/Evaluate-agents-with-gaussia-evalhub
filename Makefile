@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-CHART_DIR          ?= ./chart
+CHART_DIR          ?= ./deploy/helm
 RELEASE            ?= gaussia-evalhub
 NAMESPACE          ?= gaussia-evalhub-quickstart
 MLFLOW_NAMESPACE   ?= redhat-ods-applications
@@ -17,6 +17,13 @@ JOB_CPU_LIMIT      ?= 2000m
 JOB_MEMORY_LIMIT   ?= 2Gi
 
 RUN_NAME ?= gaussia-evalhub-run-$(shell date +%Y%m%d%H%M%S)
+
+# Streamlit UI image (matches deploy/helm ui.image defaults).
+# podman pull quay.io/rh-ai-quickstart/alquimia-streamlit-ui
+UI_IMAGE         ?= quay.io/rh-ai-quickstart/alquimia-streamlit-ui
+UI_TAG           ?= 0.1.0
+UI_CONTAINERFILE ?= apps/ui/Containerfile.ui
+UI_DEPLOYMENT    ?= gaussia-ui
 
 # Source .env for helm/oc recipes (matches README: set -a; source .env; set +a).
 define with_env
@@ -63,7 +70,8 @@ HELM_PROVIDER_SETS := \
 	wait-evalhub upgrade-provider wait-run \
 	run-humanity run-all validate logs \
 	list-releases uninstall-run uninstall cleanup-namespace \
-	run-local install-external
+	run-local install-external \
+	build-ui push-ui restart-ui ui
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make [target]\n\nTargets:\n"} \
@@ -80,6 +88,8 @@ help: ## Show available targets
 	@echo "  JOB_MEMORY_REQUEST=$(JOB_MEMORY_REQUEST)"
 	@echo "  JOB_CPU_LIMIT=$(JOB_CPU_LIMIT)"
 	@echo "  JOB_MEMORY_LIMIT=$(JOB_MEMORY_LIMIT)"
+	@echo "  UI_IMAGE=$(UI_IMAGE)"
+	@echo "  UI_TAG=$(UI_TAG)"
 
 ##@ Setup
 
@@ -161,6 +171,7 @@ run-humanity:
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set ui.enabled=false \
 		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=humanity \
@@ -178,6 +189,7 @@ run-all:
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set ui.enabled=false \
 		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=auto \
@@ -195,6 +207,7 @@ install-external: env-check env-verify-external namespace ## Job-only install ag
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set ui.enabled=false \
 		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=auto \
@@ -217,6 +230,20 @@ run-local: env-check env-verify-external ## Submit a job from your workstation w
 		--fixture "quickstart/fixtures/$(FIXTURE).json" \
 		--benchmarks auto \
 		--unique-run)
+
+##@ UI
+
+build-ui: ## Build the Streamlit UI container image with podman
+	podman build -f "$(UI_CONTAINERFILE)" -t "$(UI_IMAGE):$(UI_TAG)" .
+
+push-ui: ## Push the UI container image to the registry
+	podman push "$(UI_IMAGE):$(UI_TAG)"
+
+restart-ui: ## Restart the UI deployment on OpenShift
+	oc rollout restart "deploy/$(UI_DEPLOYMENT)" -n "$(NAMESPACE)"
+	oc rollout status "deploy/$(UI_DEPLOYMENT)" -n "$(NAMESPACE)"
+
+ui: build-ui push-ui restart-ui ## Build, push, and restart the UI container
 
 ##@ Verify and clean up
 

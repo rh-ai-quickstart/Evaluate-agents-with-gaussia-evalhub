@@ -564,7 +564,7 @@ Use these commands only when you cannot use the Makefile. Load `.env` first: `se
 **Install — local MLflow CR** (equivalent to `make install-standalone`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false
@@ -576,7 +576,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 export MLFLOW_NAMESPACE="${MLFLOW_NAMESPACE:-redhat-ods-applications}"
 export MLFLOW_SERVICE="${MLFLOW_SERVICE:-mlflow}"
 
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -592,7 +592,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 **Install — existing `mlflow` CR in namespace** (equivalent to `make install-no-mlflow`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -605,7 +605,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 ```bash
 RUN_NAME="gaussia-evalhub-run-humanity-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -619,7 +619,7 @@ helm install "${RUN_NAME}" ./chart \
 **Run — all benchmarks** (equivalent to `make upgrade-provider` + `make run-all`):
 
 ```bash
-helm upgrade gaussia-evalhub ./chart \
+helm upgrade gaussia-evalhub ./deploy/helm \
   --reuse-values \
   --namespace "${NAMESPACE}" \
   --set job.enabled=false \
@@ -646,7 +646,7 @@ oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
 
 RUN_NAME="gaussia-evalhub-run-all-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -660,7 +660,7 @@ helm install "${RUN_NAME}" ./chart \
 **External EvalHub** (equivalent to `make install-external`):
 
 ```bash
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -811,7 +811,10 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 .
 ├── .env.example           # Environment template (EvalHub, MLflow, judge, guardian)
 ├── Makefile               # Install, run, wait, validate, and uninstall targets
-├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
+├── apps/
+│   └── ui/                # Streamlit dashboard (see apps/ui/README.md)
+├── deploy/
+│   └── helm/              # Combined Helm chart (EvalHub, MLflow, provider, UI, jobs)
 ├── docs/                  # Architecture images and how-it-works guide
 │   └── how-it-works.md    # What is deployed, run, and evaluated
 ├── quickstart/            # Submitter, env checks, run waiter, and scenario fixtures

@@ -426,7 +426,13 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 .
 ├── .env.example           # Environment template (EvalHub, MLflow, judge, guardian)
 ├── Makefile               # Install, run, wait, validate, and uninstall targets
-├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
+├── apps/
+│   └── ui/                # Streamlit dashboard (see apps/ui/README.md)
+│       ├── app.py
+│       ├── Containerfile.ui
+│       └── requirements-ui.txt
+├── deploy/
+│   └── helm/              # Combined Helm chart (EvalHub, MLflow, provider, UI, jobs)
 ├── docs/                  # Architecture images and documentation
 │   ├── gaussia-metric-families.md  # Available Gaussia benchmarks and metrics
 │   ├── how-it-works.md    # What is deployed, run, and evaluated

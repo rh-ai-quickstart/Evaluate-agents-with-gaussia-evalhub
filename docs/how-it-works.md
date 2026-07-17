@@ -272,9 +272,10 @@ If you already have EvalHub and a registered Gaussia provider (`make install-ext
 
 | Path | Role |
 | --- | --- |
-| `chart/` | Helm chart: platform resources and submit Job template |
-| `chart/files/run_quickstart.py` | In-cluster submit logic (mirrors local submitter) |
+| `deploy/helm/` | Helm chart: platform resources, Streamlit UI, and submit Job template |
+| `deploy/helm/files/run_quickstart.py` | In-cluster submit logic (mirrors local submitter) |
 | `quickstart/submit_evalhub_job.py` | Workstation submitter (`make run-local`) |
 | `quickstart/wait_run.py` | Waits for submit + benchmark Jobs |
 | `quickstart/common.py` | Shared fixture loading and benchmark selection |
 | `quickstart/fixtures/` | Scenario conversation datasets |
+| `apps/ui/` | Streamlit dashboard for fixtures, runs, and logs (see `apps/ui/README.md`) |

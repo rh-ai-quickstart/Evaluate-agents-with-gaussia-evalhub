@@ -93,6 +93,35 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- printf "%s" .Values.platform.provider | toYaml | sha256sum -}}
 {{- end -}}
 
+{{- define "gaussia-evalhub.uiName" -}}
+{{- default "gaussia-ui" .Values.ui.name -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiServiceAccountName" -}}
+{{- default "ocp-api-edit" .Values.ui.serviceAccount.name -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiEnvConfigMapName" -}}
+{{- if .Values.ui.existingEnvConfigMap -}}
+{{- .Values.ui.existingEnvConfigMap -}}
+{{- else -}}
+{{- default (printf "%s-env" (include "gaussia-evalhub.uiName" .)) .Values.ui.envConfigMap -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiImage" -}}
+{{- printf "%s:%s" .Values.ui.image.repository (.Values.ui.image.tag | default .Chart.AppVersion) -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiLabels" -}}
+app: {{ include "gaussia-evalhub.uiName" . }}
+app.kubernetes.io/component: {{ include "gaussia-evalhub.uiName" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+{{- end -}}
+
+
 {{- define "gaussia-evalhub.providerEntrypoint" -}}
 export GAUSSIA_JUDGE_MODEL='{{ .Values.platform.provider.judge.model | replace `'` `'\''` }}'
 export GAUSSIA_JUDGE_MODEL_PROVIDER='{{ .Values.platform.provider.judge.modelProvider | replace `'` `'\''` }}'

@@ -5,7 +5,7 @@ Use these commands only when you cannot use the Makefile. Load `.env` first: `se
 **Install — local MLflow CR** (equivalent to `make install-standalone`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false
@@ -17,7 +17,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 export MLFLOW_NAMESPACE="${MLFLOW_NAMESPACE:-redhat-ods-applications}"
 export MLFLOW_SERVICE="${MLFLOW_SERVICE:-mlflow}"
 
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -33,7 +33,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 **Install — existing `mlflow` CR in namespace** (equivalent to `make install-no-mlflow`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -46,9 +46,10 @@ helm upgrade --install gaussia-evalhub ./chart \
 ```bash
 RUN_NAME="gaussia-evalhub-run-humanity-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
+  --set ui.enabled=false \
   --set quickstart.fixture=first-line-support \
   --set quickstart.benchmarks=humanity \
   --set quickstart.uniqueRun=true \
@@ -60,7 +61,7 @@ helm install "${RUN_NAME}" ./chart \
 **Run — all benchmarks** (equivalent to `make upgrade-provider` + `make run-all`):
 
 ```bash
-helm upgrade gaussia-evalhub ./chart \
+helm upgrade gaussia-evalhub ./deploy/helm \
   --reuse-values \
   --namespace "${NAMESPACE}" \
   --set job.enabled=false \
@@ -87,9 +88,10 @@ oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
 
 RUN_NAME="gaussia-evalhub-run-all-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
+  --set ui.enabled=false \
   --set quickstart.fixture=first-line-support \
   --set quickstart.benchmarks=auto \
   --set quickstart.uniqueRun=true \
@@ -101,9 +103,10 @@ helm install "${RUN_NAME}" ./chart \
 **External EvalHub** (equivalent to `make install-external`):
 
 ```bash
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
+  --set ui.enabled=false \
   --set quickstart.fixture=first-line-support \
   --set quickstart.benchmarks=auto \
   --set quickstart.uniqueRun=true \
