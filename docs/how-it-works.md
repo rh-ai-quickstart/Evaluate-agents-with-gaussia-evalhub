@@ -64,6 +64,7 @@ The provider manifest tells EvalHub how to launch benchmark workers:
 - **Image:** Gaussia provider container (from chart values).
 - **Entrypoint:** installs pinned Python packages, then runs `python -m gaussia.integrations.evalhub.adapter`.
 - **Environment:** judge, guardian, agentic, toxicity, and MLflow settings (from `.env` when passed through Helm).
+- **Secrets:** `GAUSSIA_JUDGE_API_KEY` and `GAUSSIA_GUARDIAN_API_KEY` are set in `.env` and applied by `make install` / `make upgrade-provider`. The chart creates an OpenShift Secret (`gaussia-evalhub-provider`) for the UI. EvalHub provider Jobs only accept plain `env.value`, so those keys are also passed into the provider ConfigMap for benchmark workers.
 
 EvalHub does **not** run the provider continuously. It starts a **Kubernetes Job per benchmark** when you submit an evaluation.
 
@@ -103,7 +104,7 @@ When you run `make run-humanity` or `make run-all`, Helm installs a **separate r
 
 The submit Job:
 
-1. Reads `quickstart/fixtures/<fixture>.json` (default: `first-line-support`).
+1. Reads `apps/evalhub_job_submission/fixtures/<fixture>.json` (default: `first-line-support`).
 2. Selects benchmarks (`humanity` only, or `auto` for the full set).
 3. Calls the EvalHub REST API with a `JobSubmissionRequest` containing the dataset, metadata, model info, and benchmark list.
 4. Prints JSON to its logs, for example:
@@ -117,7 +118,7 @@ The submit Job:
 }
 ```
 
-`make run-humanity` and `make run-all` then call `quickstart/wait_run.py`, which waits for the submit Job and for all benchmark Jobs tied to that `job_id`.
+`make run-humanity` and `make run-all` then call `apps/evalhub_job_submission/wait_run.py`, which waits for the submit Job and for all benchmark Jobs tied to that `job_id`.
 
 ## Job flow end to end
 
@@ -166,7 +167,7 @@ For `make run-humanity`, expect **one** benchmark Job. For `make run-all` on the
 
 ## Fixtures and benchmark selection
 
-Fixtures live under `quickstart/fixtures/`:
+Fixtures live under `apps/evalhub_job_submission/fixtures/`:
 
 | Fixture | Scenario |
 | --- | --- |
@@ -272,9 +273,10 @@ If you already have EvalHub and a registered Gaussia provider (`make install-ext
 
 | Path | Role |
 | --- | --- |
-| `chart/` | Helm chart: platform resources and submit Job template |
-| `chart/files/run_quickstart.py` | In-cluster submit logic (mirrors local submitter) |
-| `quickstart/submit_evalhub_job.py` | Workstation submitter (`make run-local`) |
-| `quickstart/wait_run.py` | Waits for submit + benchmark Jobs |
-| `quickstart/common.py` | Shared fixture loading and benchmark selection |
-| `quickstart/fixtures/` | Scenario conversation datasets |
+| `deploy/helm/` | Helm chart: platform resources, Streamlit UI, and submit Job template |
+| `deploy/helm/files/run_quickstart.py` | In-cluster submit logic (mirrors local submitter) |
+| `apps/evalhub_job_submission/submit_evalhub_job.py` | Workstation submitter (`make run-local`) |
+| `apps/evalhub_job_submission/wait_run.py` | Waits for submit + benchmark Jobs |
+| `apps/evalhub_job_submission/common.py` | Shared fixture loading and benchmark selection |
+| `apps/evalhub_job_submission/fixtures/` | Scenario conversation datasets |
+| `apps/ui/` | Streamlit dashboard: fixtures + EvalHub API submit/jobs (see `apps/ui/README.md`) |
