@@ -5,7 +5,7 @@ Use these commands only when you cannot use the Makefile. Load `.env` first: `se
 **Install — local MLflow CR** (equivalent to `make install-standalone`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false
@@ -17,7 +17,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 export MLFLOW_NAMESPACE="${MLFLOW_NAMESPACE:-redhat-ods-applications}"
 export MLFLOW_SERVICE="${MLFLOW_SERVICE:-mlflow}"
 
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -33,7 +33,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 **Install — existing `mlflow` CR in namespace** (equivalent to `make install-no-mlflow`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -46,9 +46,10 @@ helm upgrade --install gaussia-evalhub ./chart \
 ```bash
 RUN_NAME="gaussia-evalhub-run-humanity-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
+  --set ui.enabled=false \
   --set quickstart.fixture=first-line-support \
   --set quickstart.benchmarks=humanity \
   --set quickstart.uniqueRun=true \
@@ -59,8 +60,24 @@ helm install "${RUN_NAME}" ./chart \
 
 **Run — all benchmarks** (equivalent to `make upgrade-provider` + `make run-all`):
 
+Judge/guardian API keys are written into an OpenShift Secret by the chart
+(`gaussia-evalhub-provider` by default). To use a Secret you manage yourself:
+
 ```bash
-helm upgrade gaussia-evalhub ./chart \
+oc create secret generic gaussia-provider-keys \
+  --from-literal=GAUSSIA_JUDGE_API_KEY="${GAUSSIA_JUDGE_API_KEY}" \
+  --from-literal=GAUSSIA_GUARDIAN_API_KEY="${GAUSSIA_GUARDIAN_API_KEY}" \
+  -n "${NAMESPACE}"
+
+helm upgrade gaussia-evalhub ./deploy/helm \
+  --reuse-values \
+  --namespace "${NAMESPACE}" \
+  --set platform.provider.existingSecret=gaussia-provider-keys \
+  ...
+```
+
+```bash
+helm upgrade gaussia-evalhub ./deploy/helm \
   --reuse-values \
   --namespace "${NAMESPACE}" \
   --set job.enabled=false \
@@ -87,9 +104,10 @@ oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
 
 RUN_NAME="gaussia-evalhub-run-all-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
+  --set ui.enabled=false \
   --set quickstart.fixture=first-line-support \
   --set quickstart.benchmarks=auto \
   --set quickstart.uniqueRun=true \
@@ -101,9 +119,10 @@ helm install "${RUN_NAME}" ./chart \
 **External EvalHub** (equivalent to `make install-external`):
 
 ```bash
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
+  --set ui.enabled=false \
   --set quickstart.fixture=first-line-support \
   --set quickstart.benchmarks=auto \
   --set quickstart.uniqueRun=true \
@@ -119,8 +138,8 @@ helm install "${RUN_NAME}" ./chart \
 uv run \
   --with "gaussia[evalhub]" \
   --with "eval-hub-sdk[client]==0.1.5" \
-  python quickstart/submit_evalhub_job.py \
-    --fixture quickstart/fixtures/first-line-support.json \
+  python apps/evalhub_job_submission/submit_evalhub_job.py \
+    --fixture apps/evalhub_job_submission/fixtures/first-line-support.json \
     --benchmarks auto \
     --unique-run
 ```
