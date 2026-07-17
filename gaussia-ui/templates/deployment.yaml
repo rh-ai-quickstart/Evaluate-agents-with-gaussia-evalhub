@@ -25,6 +25,152 @@ spec:
         deployment: gaussia-ui
     spec:
       containers:
+      - env:
+        - name: EVALHUB_TENANT
+          valueFrom:
+            configMapKeyRef:
+              key: EVALHUB_TENANT
+              name: gaussia-env
+        - name: GAUSSIA_GUARDIAN_MODEL
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_GUARDIAN_MODEL
+              name: gaussia-env
+        - name: GAUSSIA_GUARDIAN_TOKENIZER_MODEL
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_GUARDIAN_TOKENIZER_MODEL
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_API_KEY
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_API_KEY
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_EOS_JSON_CLAUSE
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_EOS_JSON_CLAUSE
+              name: gaussia-env
+        - name: GAUSSIA_AGENTIC_K
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_AGENTIC_K
+              name: gaussia-env
+        - name: GAUSSIA_GUARDIAN_LOGPROBS
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_GUARDIAN_LOGPROBS
+              name: gaussia-env
+        - name: EVALHUB_EXPERIMENT_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: EVALHUB_EXPERIMENT_NAME
+              name: gaussia-env
+        - name: EVALHUB_INSECURE
+          valueFrom:
+            configMapKeyRef:
+              key: EVALHUB_INSECURE
+              name: gaussia-env
+        - name: GAUSSIA_PROVIDER_PACKAGE_SPEC
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_PROVIDER_PACKAGE_SPEC
+              name: gaussia-env
+        - name: GAUSSIA_TOXICITY_STATISTICAL_MODE
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_TOXICITY_STATISTICAL_MODE
+              name: gaussia-env
+        - name: GAUSSIA_AGENTIC_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_AGENTIC_THRESHOLD
+              name: gaussia-env
+        - name: GAUSSIA_GUARDIAN_API_KEY
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_GUARDIAN_API_KEY
+              name: gaussia-env
+        - name: GAUSSIA_GUARDIAN_TEMPERATURE
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_GUARDIAN_TEMPERATURE
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_TEMPERATURE
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_TEMPERATURE
+              name: gaussia-env
+        - name: GAUSSIA_AGENTIC_TOOL_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_AGENTIC_TOOL_THRESHOLD
+              name: gaussia-env
+        - name: GAUSSIA_GUARDIAN_CHAT_COMPLETIONS
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_GUARDIAN_CHAT_COMPLETIONS
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_MODEL
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_MODEL
+              name: gaussia-env
+        - name: MLFLOW_TRACKING_URI
+          valueFrom:
+            configMapKeyRef:
+              key: MLFLOW_TRACKING_URI
+              name: gaussia-env
+        - name: EVALHUB_AUTH_TOKEN
+          valueFrom:
+            configMapKeyRef:
+              key: EVALHUB_AUTH_TOKEN
+              name: gaussia-env
+        - name: EVALHUB_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              key: EVALHUB_BASE_URL
+              name: gaussia-env
+        - name: GAUSSIA_TOXICITY_EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_TOXICITY_EMBEDDING_MODEL
+              name: gaussia-env
+        - name: MLFLOW_WORKSPACE
+          valueFrom:
+            configMapKeyRef:
+              key: MLFLOW_WORKSPACE
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT
+              name: gaussia-env
+        - name: MLFLOW_TRACKING_TOKEN
+          valueFrom:
+            configMapKeyRef:
+              key: MLFLOW_TRACKING_TOKEN
+              name: gaussia-env
+        - name: GAUSSIA_GUARDIAN_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_GUARDIAN_BASE_URL
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_BASE_URL
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_BOS_JSON_CLAUSE
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_BOS_JSON_CLAUSE
+              name: gaussia-env
+        - name: GAUSSIA_JUDGE_MODEL_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              key: GAUSSIA_JUDGE_MODEL_PROVIDER
+              name: gaussia-env
       - image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: Always
         name: gaussia-ui
