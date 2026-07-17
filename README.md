@@ -135,6 +135,8 @@ GAUSSIA_GUARDIAN_API_KEY="<guardian-token>"
 GAUSSIA_GUARDIAN_CHAT_COMPLETIONS="true"
 ```
 
+`GAUSSIA_JUDGE_API_KEY` and `GAUSSIA_GUARDIAN_API_KEY` are set in `.env`. `make install` / `make upgrade-provider` apply them into an OpenShift Secret for the UI, and into the provider ConfigMap for EvalHub Jobs (EvalHub drops `valueFrom` on provider env). To bring your own Secret for the UI, set `platform.provider.existingSecret`.
+
 Set `GAUSSIA_JUDGE_MODEL_PROVIDER` to the LangChain provider that matches your judge endpoint. Use `openai` for OpenShift AI or LiteLLM routes that expose an OpenAI-compatible `/v1` API. Custom served model names such as `llama-scout-17b` require this setting because LangChain cannot infer the provider from the model name alone.
 
 Keep `GAUSSIA_GUARDIAN_CHAT_COMPLETIONS="true"` when the guardian uses Groq or another OpenAI-compatible chat endpoint. Setting it to `false` selects the legacy `/completions` endpoint, which Groq does not expose for chat models.
@@ -426,16 +428,22 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 .
 ├── .env.example           # Environment template (EvalHub, MLflow, judge, guardian)
 ├── Makefile               # Install, run, wait, validate, and uninstall targets
-├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
+├── apps/
+│   ├── ui/                # Streamlit dashboard (see apps/ui/README.md)
+│   │   ├── app.py
+│   │   ├── Containerfile.ui
+│   │   └── requirements.txt
+│   └── evalhub_job_submission/  # Submitter, env checks, run waiter, and scenario fixtures
+│       ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
+│       ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
+│       └── submit_evalhub_job.py
+├── deploy/
+│   └── helm/              # Combined Helm chart (EvalHub, MLflow, provider, UI, jobs)
 ├── docs/                  # Architecture images and documentation
 │   ├── gaussia-metric-families.md  # Available Gaussia benchmarks and metrics
 │   ├── how-it-works.md    # What is deployed, run, and evaluated
 │   ├── manual-helm-install.md  # Manual Helm installation commands
 │   └── troubleshooting.md # Common issues and solutions
-├── quickstart/            # Submitter, env checks, run waiter, and scenario fixtures
-│   ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
-│   ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
-│   └── submit_evalhub_job.py
 └── README.md              # Red Hat AI quickstart guide
 ```
 

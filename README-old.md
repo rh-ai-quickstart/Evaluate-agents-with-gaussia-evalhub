@@ -264,14 +264,14 @@ For manual `helm`/`oc` commands without Make, see [Advanced — manual Helm](#ad
 
 ### Run evaluations
 
-Each evaluation is a **separate Helm release** that submits one EvalHub job and runs selected benchmarks. `make run-humanity` and `make run-all` call `quickstart/wait_run.py` to wait for the submit Job and benchmark Jobs to finish.
+Each evaluation is a **separate Helm release** that submits one EvalHub job and runs selected benchmarks. `make run-humanity` and `make run-all` call `apps/evalhub_job_submission/wait_run.py` to wait for the submit Job and benchmark Jobs to finish.
 
 | Goal | Command | Notes |
 | --- | --- | --- |
 | Humanity benchmark only | `make run-humanity` | No judge/guardian required; optional `FIXTURE=retail`, `RUN_NAME=my-run` |
 | All benchmarks | `make run-all` | Runs `upgrade-provider` first, then waits for six benchmarks |
 | Existing EvalHub | `make install-external` | Set `EVALHUB_*` in `.env`; runs `auto` benchmarks and waits |
-| Submit from workstation | `make run-local` | Uses `uv` and `quickstart/submit_evalhub_job.py` |
+| Submit from workstation | `make run-local` | Uses `uv` and `apps/evalhub_job_submission/submit_evalhub_job.py` |
 
 **Run overrides:**
 
@@ -564,7 +564,7 @@ Use these commands only when you cannot use the Makefile. Load `.env` first: `se
 **Install — local MLflow CR** (equivalent to `make install-standalone`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false
@@ -576,7 +576,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 export MLFLOW_NAMESPACE="${MLFLOW_NAMESPACE:-redhat-ods-applications}"
 export MLFLOW_SERVICE="${MLFLOW_SERVICE:-mlflow}"
 
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -592,7 +592,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 **Install — existing `mlflow` CR in namespace** (equivalent to `make install-no-mlflow`):
 
 ```bash
-helm upgrade --install gaussia-evalhub ./chart \
+helm upgrade --install gaussia-evalhub ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --create-namespace \
   --set job.enabled=false \
@@ -605,7 +605,7 @@ helm upgrade --install gaussia-evalhub ./chart \
 ```bash
 RUN_NAME="gaussia-evalhub-run-humanity-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -619,7 +619,7 @@ helm install "${RUN_NAME}" ./chart \
 **Run — all benchmarks** (equivalent to `make upgrade-provider` + `make run-all`):
 
 ```bash
-helm upgrade gaussia-evalhub ./chart \
+helm upgrade gaussia-evalhub ./deploy/helm \
   --reuse-values \
   --namespace "${NAMESPACE}" \
   --set job.enabled=false \
@@ -646,7 +646,7 @@ oc rollout status deploy/gaussia-evalhub-evalhub -n "${NAMESPACE}"
 
 RUN_NAME="gaussia-evalhub-run-all-$(date +%H%M%S)"
 
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -660,7 +660,7 @@ helm install "${RUN_NAME}" ./chart \
 **External EvalHub** (equivalent to `make install-external`):
 
 ```bash
-helm install "${RUN_NAME}" ./chart \
+helm install "${RUN_NAME}" ./deploy/helm \
   --namespace "${NAMESPACE}" \
   --set platform.enabled=false \
   --set quickstart.fixture=first-line-support \
@@ -678,8 +678,8 @@ helm install "${RUN_NAME}" ./chart \
 uv run \
   --with "gaussia[evalhub]" \
   --with "eval-hub-sdk[client]==0.1.5" \
-  python quickstart/submit_evalhub_job.py \
-    --fixture quickstart/fixtures/first-line-support.json \
+  python apps/evalhub_job_submission/submit_evalhub_job.py \
+    --fixture apps/evalhub_job_submission/fixtures/first-line-support.json \
     --benchmarks auto \
     --unique-run
 ```
@@ -811,10 +811,13 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 .
 ├── .env.example           # Environment template (EvalHub, MLflow, judge, guardian)
 ├── Makefile               # Install, run, wait, validate, and uninstall targets
-├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
+├── apps/
+│   └── ui/                # Streamlit dashboard (see apps/ui/README.md)
+├── deploy/
+│   └── helm/              # Combined Helm chart (EvalHub, MLflow, provider, UI, jobs)
 ├── docs/                  # Architecture images and how-it-works guide
 │   └── how-it-works.md    # What is deployed, run, and evaluated
-├── quickstart/            # Submitter, env checks, run waiter, and scenario fixtures
+├── apps/evalhub_job_submission/  # Submitter, env checks, run waiter, and scenario fixtures
 │   ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
 │   ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
 │   └── submit_evalhub_job.py
