@@ -20,7 +20,7 @@ Sidebar controls set the OpenShift namespace, Helm release name, and selected fi
 apps/ui/
 ├── app.py                 # Entrypoint (`streamlit run app.py`)
 ├── Containerfile.ui       # Container image for the dashboard
-├── requirements-ui.txt
+├── requirements.txt
 ├── .streamlit/            # Streamlit theme and server config
 └── assets/                # Logos and static assets
 ```
@@ -30,7 +30,7 @@ apps/ui/
 From the repository root (with cluster/`oc` access and a configured `.env` as described in the main README):
 
 ```bash
-pip install -r apps/ui/requirements-ui.txt
+pip install -r apps/ui/requirements.txt
 streamlit run apps/ui/app.py
 ```
 

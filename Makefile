@@ -102,13 +102,13 @@ env-check: ## Ensure .env exists (creates from .env.example when missing)
 	@test -f .env || (echo "Missing .env — run: make env-init" && exit 1)
 
 env-show: env-check ## Show variables loaded from .env (secrets masked)
-	@$(call with_env,python3 quickstart/check_env.py show)
+	@$(call with_env,python3 apps/evalhub_job_submission/check_env.py show)
 
 env-verify-provider: env-check ## Fail if judge/guardian .env values are missing or placeholders
-	@$(call with_env,python3 quickstart/check_env.py verify-provider)
+	@$(call with_env,python3 apps/evalhub_job_submission/check_env.py verify-provider)
 
 env-verify-external: env-check ## Fail if external EvalHub .env values are missing or placeholders
-	@$(call with_env,python3 quickstart/check_env.py verify-external)
+	@$(call with_env,python3 apps/evalhub_job_submission/check_env.py verify-external)
 
 namespace: env-check ## Create or select the OpenShift project
 	@oc get project "$(NAMESPACE)" >/dev/null 2>&1 || oc new-project "$(NAMESPACE)"
@@ -163,7 +163,7 @@ upgrade-provider: env-check env-verify-provider ## Apply judge/guardian settings
 
 wait-run: ## Wait for a run submit job and EvalHub benchmark jobs (set RUN_NAME)
 	@test "$(origin RUN_NAME)" != "file" || (echo "Set RUN_NAME, e.g. make wait-run RUN_NAME=gaussia-evalhub-run-all-120000" && exit 1)
-	@python3 quickstart/wait_run.py --namespace "$(NAMESPACE)" --run-name "$(RUN_NAME)"
+	@python3 apps/evalhub_job_submission/wait_run.py --namespace "$(NAMESPACE)" --run-name "$(RUN_NAME)"
 
 ##@ Evaluation runs
 
@@ -226,8 +226,8 @@ run-local: env-check env-verify-external ## Submit a job from your workstation w
 	@$(call with_env,uv run \
 		--with "gaussia[evalhub]" \
 		--with "eval-hub-sdk[client]==0.1.5" \
-		python quickstart/submit_evalhub_job.py \
-		--fixture "quickstart/fixtures/$(FIXTURE).json" \
+		python apps/evalhub_job_submission/submit_evalhub_job.py \
+		--fixture "apps/evalhub_job_submission/fixtures/$(FIXTURE).json" \
 		--benchmarks auto \
 		--unique-run)
 

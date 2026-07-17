@@ -5,8 +5,9 @@ import os
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT / "quickstart"))
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PACKAGE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(PACKAGE_DIR))
 
 from common import load_env_files  # noqa: E402
 
@@ -50,7 +51,7 @@ SECRET_MARKERS = ("API_KEY", "AUTH_TOKEN", "TRACKING_TOKEN")
 
 
 def load_env() -> None:
-    load_env_files(REPO_ROOT / ".env", REPO_ROOT / "quickstart" / ".env")
+    load_env_files(REPO_ROOT / ".env", PACKAGE_DIR / ".env")
 
 
 def is_secret(name: str) -> bool:

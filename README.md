@@ -427,10 +427,14 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 ├── .env.example           # Environment template (EvalHub, MLflow, judge, guardian)
 ├── Makefile               # Install, run, wait, validate, and uninstall targets
 ├── apps/
-│   └── ui/                # Streamlit dashboard (see apps/ui/README.md)
-│       ├── app.py
-│       ├── Containerfile.ui
-│       └── requirements-ui.txt
+│   ├── ui/                # Streamlit dashboard (see apps/ui/README.md)
+│   │   ├── app.py
+│   │   ├── Containerfile.ui
+│   │   └── requirements.txt
+│   └── evalhub_job_submission/  # Submitter, env checks, run waiter, and scenario fixtures
+│       ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
+│       ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
+│       └── submit_evalhub_job.py
 ├── deploy/
 │   └── helm/              # Combined Helm chart (EvalHub, MLflow, provider, UI, jobs)
 ├── docs/                  # Architecture images and documentation
@@ -438,10 +442,6 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 │   ├── how-it-works.md    # What is deployed, run, and evaluated
 │   ├── manual-helm-install.md  # Manual Helm installation commands
 │   └── troubleshooting.md # Common issues and solutions
-├── quickstart/            # Submitter, env checks, run waiter, and scenario fixtures
-│   ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
-│   ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
-│   └── submit_evalhub_job.py
 └── README.md              # Red Hat AI quickstart guide
 ```
 

@@ -122,8 +122,8 @@ helm install "${RUN_NAME}" ./deploy/helm \
 uv run \
   --with "gaussia[evalhub]" \
   --with "eval-hub-sdk[client]==0.1.5" \
-  python quickstart/submit_evalhub_job.py \
-    --fixture quickstart/fixtures/first-line-support.json \
+  python apps/evalhub_job_submission/submit_evalhub_job.py \
+    --fixture apps/evalhub_job_submission/fixtures/first-line-support.json \
     --benchmarks auto \
     --unique-run
 ```

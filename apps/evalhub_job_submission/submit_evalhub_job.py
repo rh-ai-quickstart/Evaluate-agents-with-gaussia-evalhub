@@ -23,7 +23,7 @@ except ImportError as exc:
     msg = (
         "This quickstart needs the EvalHub client dependencies. "
         'Run it with `uv run --with "eval-hub-sdk[client]==0.1.5" '
-        "python quickstart/submit_evalhub_job.py`."
+        "python apps/evalhub_job_submission/submit_evalhub_job.py`."
     )
     raise SystemExit(msg) from exc
 
@@ -39,8 +39,9 @@ from common import (
 )
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_FIXTURE = REPO_ROOT / "quickstart" / "fixtures" / "first-line-support.json"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PACKAGE_DIR = Path(__file__).resolve().parent
+DEFAULT_FIXTURE = PACKAGE_DIR / "fixtures" / "first-line-support.json"
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,7 +75,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    load_env_files(REPO_ROOT / ".env", REPO_ROOT / "quickstart" / ".env")
+    load_env_files(REPO_ROOT / ".env", PACKAGE_DIR / ".env")
     args = parse_args()
     fixture = load_quickstart_fixture(args.fixture)
     try:

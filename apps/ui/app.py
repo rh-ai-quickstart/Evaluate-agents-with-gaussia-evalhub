@@ -18,7 +18,7 @@ import streamlit as st
 
 UI_DIR = Path(__file__).resolve().parent
 REPO_ROOT = UI_DIR.parents[1]
-FIXTURES_DIR = REPO_ROOT / "quickstart" / "fixtures"
+FIXTURES_DIR = REPO_ROOT / "apps" / "evalhub_job_submission" / "fixtures"
 
 FIXTURE_META = {
     "first-line-support": {

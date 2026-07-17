@@ -14,13 +14,13 @@ RUN tar xzf /tmp/oc.tar.gz -C /usr/local/bin oc \
 
 WORKDIR /opt/app-root/src
 
-COPY apps/ui/requirements-ui.txt /tmp/requirements-ui.txt
-RUN pip install --no-cache-dir -r /tmp/requirements-ui.txt \
-    && rm /tmp/requirements-ui.txt
+COPY apps/ui/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
 
 COPY Makefile .
 COPY deploy/helm/ deploy/helm/
-COPY quickstart/ quickstart/
+COPY apps/evalhub_job_submission/ apps/evalhub_job_submission/
 COPY apps/ui/ apps/ui/
 
 WORKDIR /opt/app-root/src/apps/ui

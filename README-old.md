@@ -264,14 +264,14 @@ For manual `helm`/`oc` commands without Make, see [Advanced — manual Helm](#ad
 
 ### Run evaluations
 
-Each evaluation is a **separate Helm release** that submits one EvalHub job and runs selected benchmarks. `make run-humanity` and `make run-all` call `quickstart/wait_run.py` to wait for the submit Job and benchmark Jobs to finish.
+Each evaluation is a **separate Helm release** that submits one EvalHub job and runs selected benchmarks. `make run-humanity` and `make run-all` call `apps/evalhub_job_submission/wait_run.py` to wait for the submit Job and benchmark Jobs to finish.
 
 | Goal | Command | Notes |
 | --- | --- | --- |
 | Humanity benchmark only | `make run-humanity` | No judge/guardian required; optional `FIXTURE=retail`, `RUN_NAME=my-run` |
 | All benchmarks | `make run-all` | Runs `upgrade-provider` first, then waits for six benchmarks |
 | Existing EvalHub | `make install-external` | Set `EVALHUB_*` in `.env`; runs `auto` benchmarks and waits |
-| Submit from workstation | `make run-local` | Uses `uv` and `quickstart/submit_evalhub_job.py` |
+| Submit from workstation | `make run-local` | Uses `uv` and `apps/evalhub_job_submission/submit_evalhub_job.py` |
 
 **Run overrides:**
 
@@ -678,8 +678,8 @@ helm install "${RUN_NAME}" ./deploy/helm \
 uv run \
   --with "gaussia[evalhub]" \
   --with "eval-hub-sdk[client]==0.1.5" \
-  python quickstart/submit_evalhub_job.py \
-    --fixture quickstart/fixtures/first-line-support.json \
+  python apps/evalhub_job_submission/submit_evalhub_job.py \
+    --fixture apps/evalhub_job_submission/fixtures/first-line-support.json \
     --benchmarks auto \
     --unique-run
 ```
@@ -817,7 +817,7 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 │   └── helm/              # Combined Helm chart (EvalHub, MLflow, provider, UI, jobs)
 ├── docs/                  # Architecture images and how-it-works guide
 │   └── how-it-works.md    # What is deployed, run, and evaluated
-├── quickstart/            # Submitter, env checks, run waiter, and scenario fixtures
+├── apps/evalhub_job_submission/  # Submitter, env checks, run waiter, and scenario fixtures
 │   ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
 │   ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
 │   └── submit_evalhub_job.py
