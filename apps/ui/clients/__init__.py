@@ -1,1 +1,1 @@
-"""External process clients used by the UI."""
+"""External API clients used by the UI."""

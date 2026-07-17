@@ -7,7 +7,6 @@ from pathlib import Path
 
 import streamlit as st
 
-from config import DEFAULT_NAMESPACE, DEFAULT_RELEASE
 from services.fixture_service import FixtureSummary
 
 
@@ -15,8 +14,6 @@ from services.fixture_service import FixtureSummary
 class SidebarState:
     page: str
     selected_fixture: str
-    namespace: str
-    release: str
 
 
 def render_sidebar(
@@ -33,7 +30,7 @@ def render_sidebar(
 
         page = st.radio(
             "Navigation",
-            ["Fixtures", "Run Evaluation", "Run History & Logs"],
+            ["Fixtures", "Run Evaluation", "Jobs"],
             label_visibility="collapsed",
         )
 
@@ -52,14 +49,7 @@ def render_sidebar(
         else:
             selected_fixture = fixture_names[0] if fixture_names else ""
 
-        st.divider()
-        st.caption("Cluster Settings")
-        namespace = st.text_input("Namespace", value=DEFAULT_NAMESPACE, key="ns")
-        release = st.text_input("Release", value=DEFAULT_RELEASE, key="rel")
-
     return SidebarState(
         page=page,
         selected_fixture=selected_fixture,
-        namespace=namespace,
-        release=release,
     )

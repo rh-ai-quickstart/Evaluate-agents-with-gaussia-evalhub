@@ -9,10 +9,8 @@ from services.fixture_service import FixtureService
 UI_DIR = Path(__file__).resolve().parent
 REPO_ROOT = UI_DIR.parents[1]
 ASSETS_DIR = UI_DIR / "assets"
-FIXTURES_DIR = REPO_ROOT / "apps" / "evalhub_job_submission" / "fixtures"
-
-DEFAULT_NAMESPACE = "gaussia-evalhub-quickstart"
-DEFAULT_RELEASE = "gaussia-evalhub"
+JOB_SUBMISSION_DIR = REPO_ROOT / "apps" / "evalhub_job_submission"
+FIXTURES_DIR = JOB_SUBMISSION_DIR / "fixtures"
 
 BENCHMARKS_INFO: dict[str, dict[str, str]] = {
     "humanity": {

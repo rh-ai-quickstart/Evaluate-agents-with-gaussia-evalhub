@@ -1,18 +1,18 @@
 # Gaussia EvalHub Quickstart UI
 
-Streamlit dashboard for browsing scenario fixtures, submitting Gaussia EvalHub evaluation runs, and inspecting run history on OpenShift.
+Streamlit dashboard for browsing scenario fixtures and submitting Gaussia EvalHub
+evaluation runs via the EvalHub API.
 
 ## What it does
-
-The UI wraps the same Makefile targets used in the CLI quickstart:
 
 | Page | Purpose |
 | --- | --- |
 | **Fixtures** | Inspect the included agent conversation scenarios (first-line support, retail, root-cause analysis). |
-| **Run Evaluation** | Submit `humanity`, full-suite, external EvalHub, or local `uv` runs against the selected fixture. |
-| **Run History & Logs** | Check platform status and follow job logs for a run. |
+| **Run Evaluation** | Submit `humanity` or full-suite benchmarks against the selected fixture through the EvalHub SDK. |
+| **Jobs** | List and inspect EvalHub jobs by id. |
 
-Sidebar controls set the OpenShift namespace, Helm release name, and selected fixture used by those flows.
+The UI calls EvalHub directly (same path as `apps/evalhub_job_submission/submit_evalhub_job.py`).
+It does **not** create OpenShift submit Jobs — those remain Make-only (`make run-humanity`, `make run-all`, `make install-external`).
 
 ## Layout
 
@@ -22,9 +22,9 @@ apps/ui/
 ├── config.py              # Paths and shared UI configuration
 ├── Containerfile.ui       # Container image for the dashboard
 ├── requirements.txt
-├── clients/               # External process clients (e.g. make)
+├── clients/               # EvalHub API client
 ├── components/            # Sidebar, styles, shared UI helpers
-├── views/                 # Fixtures, Run Evaluation, Run History views
+├── views/                 # Fixtures, Run Evaluation, Jobs views
 ├── services/              # Fixture discovery and evaluation orchestration
 ├── .streamlit/            # Streamlit theme and server config
 └── assets/                # Logos and static assets
@@ -32,7 +32,7 @@ apps/ui/
 
 ## Run locally
 
-From the repository root (with cluster/`oc` access and a configured `.env` as described in the main README):
+From the repository root (with `EVALHUB_*` configured in `.env` as described in the main README):
 
 ```bash
 pip install -r apps/ui/requirements.txt
@@ -43,7 +43,8 @@ Or build and run the container image with podman (build context is the repositor
 
 ```bash
 podman build -f apps/ui/Containerfile.ui -t gaussia-evalhub-ui .
-podman run --rm -p 8501:8501 gaussia-evalhub-ui
+podman run --rm -p 8501:8501 --env-file .env gaussia-evalhub-ui
 ```
 
 The dashboard can also be deployed with the combined Helm chart at `deploy/helm` (`ui.enabled=true`).
+The UI ConfigMap already injects `EVALHUB_*` for in-cluster EvalHub.

@@ -1,18 +1,14 @@
-"""Helpers for streaming make output into Streamlit widgets."""
+"""Helpers for displaying structured results in Streamlit widgets."""
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import json
+from typing import Any
 
 import streamlit as st
 
 
-def streamlit_code_sink(container=None) -> Callable[[str], None]:
-    """Return an ``on_output`` callback that writes into a Streamlit code block."""
-    if container is None:
-        container = st.empty()
-
-    def on_output(text: str) -> None:
-        container.code(text, language="bash")
-
-    return on_output
+def show_json(payload: Any, *, container=None) -> None:
+    """Render a JSON-serializable payload in a Streamlit code block."""
+    target = container if container is not None else st
+    target.code(json.dumps(payload, indent=2, sort_keys=True, default=str), language="json")

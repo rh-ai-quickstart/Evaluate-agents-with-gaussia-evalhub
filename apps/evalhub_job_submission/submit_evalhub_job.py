@@ -75,40 +75,59 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    load_env_files(REPO_ROOT / ".env", PACKAGE_DIR / ".env")
     args = parse_args()
-    fixture = load_quickstart_fixture(args.fixture)
-    try:
-        benchmarks = selected_benchmarks(args.benchmarks, fixture)
-    except ValueError as exc:
-        raise SystemExit(str(exc)) from exc
+    result = submit_job(
+        fixture_path=args.fixture,
+        benchmarks=args.benchmarks,
+        unique_run=args.unique_run,
+        run_suffix=args.run_suffix,
+        dry_run=args.dry_run,
+    )
+    print_json(result)
 
-    run_suffix = args.run_suffix or (generated_run_suffix() if args.unique_run else None)
-    parameters = build_evalhub_parameters(fixture, run_suffix=run_suffix)
+
+def submit_job(
+    *,
+    fixture_path: str | Path,
+    benchmarks: str = "auto",
+    unique_run: bool = False,
+    run_suffix: str | None = None,
+    dry_run: bool = False,
+    load_dotenv: bool = True,
+) -> dict[str, Any]:
+    """Build and submit an EvalHub job from a fixture path.
+
+    Returns a JSON-serializable summary. When ``dry_run`` is true, returns the
+    request payload instead of calling EvalHub.
+    """
+    if load_dotenv:
+        load_env_files(REPO_ROOT / ".env", PACKAGE_DIR / ".env")
+
+    fixture = load_quickstart_fixture(fixture_path)
+    selected = selected_benchmarks(benchmarks, fixture)
+    suffix = run_suffix or (generated_run_suffix() if unique_run else None)
+    parameters = build_evalhub_parameters(fixture, run_suffix=suffix)
     request = build_job_submission_request(
         fixture=fixture,
         parameters=parameters,
-        benchmark_ids=benchmarks,
+        benchmark_ids=selected,
     )
 
-    if args.dry_run:
-        print_json(request.model_dump(mode="json", exclude_none=True))
-        return
+    if dry_run:
+        return request.model_dump(mode="json", exclude_none=True)
 
     with build_client_from_env() as client:
         job = client.jobs.submit(request)
 
-    print_json(
-        {
-            "status": "submitted",
-            "job_id": job.id,
-            "request_name": request.name,
-            "benchmark_ids": benchmarks,
-            "session_id": parameters["dataset"]["session_id"],
-            "stream_id": parameters["metadata"].get("stream_id", ""),
-            "control_id": parameters["metadata"].get("control_id", ""),
-        }
-    )
+    return {
+        "status": "submitted",
+        "job_id": job.id,
+        "request_name": request.name,
+        "benchmark_ids": selected,
+        "session_id": parameters["dataset"]["session_id"],
+        "stream_id": parameters["metadata"].get("stream_id", ""),
+        "control_id": parameters["metadata"].get("control_id", ""),
+    }
 
 
 def build_client_from_env() -> SyncEvalHubClient:

@@ -2,24 +2,12 @@ FROM registry.redhat.io/ubi10/python-314-minimal:1783485502
 
 USER 0
 
-RUN microdnf install -y --nodocs make tar gzip curl \
-    && microdnf clean all
-
-RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | VERIFY_CHECKSUM=false bash
-RUN curl -k -L -o /tmp/oc.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
-
-RUN tar xzf /tmp/oc.tar.gz -C /usr/local/bin oc \
-    && chmod +x /usr/local/bin/oc \
-    && rm /tmp/oc.tar.gz
-
 WORKDIR /opt/app-root/src
 
 COPY apps/ui/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 
-COPY Makefile .
-COPY deploy/helm/ deploy/helm/
 COPY apps/evalhub_job_submission/ apps/evalhub_job_submission/
 COPY apps/ui/ apps/ui/
 
