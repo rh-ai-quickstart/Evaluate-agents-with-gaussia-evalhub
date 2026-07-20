@@ -59,6 +59,7 @@ platform:
     enabled: true
     name: ""
     image:
+      fullReference: "docker.io/alquimiaai/eval-hub@sha256:087b97a10e47f2795b50f0a26b5361f2ac968dd4ff4ebb259399d0d4b0a5b12f"
       repository: docker.io/alquimiaai/eval-hub
       tag: latest
       pullPolicy: IfNotPresent

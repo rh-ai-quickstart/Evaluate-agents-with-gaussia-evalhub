@@ -409,6 +409,8 @@ The provider container runs the [Gaussia] EvalHub adapter with:
 python -m gaussia.integrations.evalhub.adapter
 ```
 
+The chart pins the EvalHub deployment and sidecar to an immutable `docker.io/alquimiaai/eval-hub` digest through `platform.evalhub.image.fullReference`. Clear that value only when you intentionally want to use the mutable `platform.evalhub.image.repository` and `platform.evalhub.image.tag` fallback.
+
 By default, the chart uses `docker.io/alquimiaai/gaussia-provider:1.1.0b2`, pinned to its published digest, which includes the [Gaussia] EvalHub adapter and CPU-only Torch dependencies. It also pins `gaussia[evalhub]==1.1.0b2` at startup so benchmark dependencies stay explicit.
 Override `platform.provider.packageSpec` when the provider pod needs extra LangChain connector packages, such as `langchain-litellm` for LiteLLM. Set `platform.provider.judge.modelProvider` when LangChain cannot infer the provider from the model name.
 Override `platform.provider.evalhubSdkSpec` only when you want the provider pod to install a different EvalHub adapter SDK at startup.

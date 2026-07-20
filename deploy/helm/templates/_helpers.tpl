@@ -51,6 +51,14 @@
 {{- default (printf "%s.%s.svc.cluster.local" (include "gaussia-evalhub.mlflowName" .) (include "gaussia-evalhub.mlflowRbacNamespace" .)) .Values.platform.mlflow.serviceAlias.externalName -}}
 {{- end -}}
 
+{{- define "gaussia-evalhub.evalhubImage" -}}
+{{- if .Values.platform.evalhub.image.fullReference -}}
+{{- .Values.platform.evalhub.image.fullReference -}}
+{{- else -}}
+{{- printf "%s:%s" .Values.platform.evalhub.image.repository .Values.platform.evalhub.image.tag -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "gaussia-evalhub.providerImage" -}}
 {{- if .Values.platform.provider.image.fullReference -}}
 {{- .Values.platform.provider.image.fullReference -}}
