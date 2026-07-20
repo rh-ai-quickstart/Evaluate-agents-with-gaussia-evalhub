@@ -1,26 +1,25 @@
-# Evaluate your fleet of autonomous retail agents
+# Evaluate your fleet of autonomous agents with Gaussia
 
-Evaluate autonomous retail agent conversations with repeatable benchmarks, EvalHub orchestration, and MLflow run history before they go into production.
+Evaluate autonomous agent conversations with repeatable [Gaussia] benchmarks, EvalHub orchestration, and MLflow run history before they go into production.
 
 ## Table of contents
 
 - [Detailed description](#detailed-description)
   - [Architecture](#architecture)
+- [Streamlit UI](#streamlit-ui)
 - [Requirements](#requirements)
-  - [Hardware requirements](#hardware-requirements)
-  - [Software requirements](#software-requirements)
-  - [Required user permissions](#required-user-permissions)
+    - [Software requirements](#software-requirements)
+    - [Required user permissions](#required-user-permissions)
 - [Deploy](#deploy)
   - [Deploy judge and guardian models](#deploy-judge-and-guardian-models)
   - [Prepare the quickstart project](#prepare-the-quickstart-project)
   - [Install the evaluation platform](#install-the-evaluation-platform)
-  - [Demo UI](#demo-ui)
-    - [Fixtures](#fixtures)
-    - [Run evaluations](#run-evaluations)
-    - [View jobs](#view-jobs)
-    - [Validate results](#validate-results)
+  - [Run the first evaluation](#run-the-first-evaluation)
+  - [Run the full benchmark suite](#run-the-full-benchmark-suite)
+  - [Validate results](#validate-results)
   - [Delete](#delete)
   - [Optional - Use existing EvalHub and MLflow](#optional---use-existing-evalhub-and-mlflow)
+  - [How it works](docs/how-it-works.md)
 - [References](#references)
 - [Technical details](#technical-details)
   - [Payload contract](#payload-contract)
@@ -32,7 +31,7 @@ Evaluate autonomous retail agent conversations with repeatable benchmarks, EvalH
 
 ## Detailed description
 
-Building one agent in a notebook is straightforward. Scaling a fleet of retail agents is a different engineering problem. Once agents execute repeated workflows for real users, manual review cannot reliably catch context loss, inconsistent guidance, safety regressions, or behavior drift across longer sessions.
+Building one agent in a notebook is straightforward. Scaling a fleet of agents across support, retail, SRE, and internal operations workflows is a different engineering problem. Once agents execute repeated workflows for real users, manual review cannot reliably catch context loss, inconsistent guidance, safety regressions, or behavior drift across longer sessions.
 
 Teams need a repeatable way to answer practical release and governance questions:
 
@@ -65,17 +64,24 @@ By completing this quickstart, you will:
 3. EvalHub starts the [Gaussia] provider adapter.
 4. The provider evaluates the dataset inside the OpenShift AI environment, reports results to EvalHub, and logs metrics, datasets, sources, and model metadata to MLflow.
 
+## Streamlit UI
+
+The **Gaussia EvalHub** dashboard (`apps/ui/app.py`) is a three-page Streamlit UI for browsing scenario fixtures, submitting evaluations to EvalHub, and inspecting jobs. Run it locally with Streamlit or open the OpenShift Route after `make install` (`ui.enabled=true` by default).
+
+```bash
+pip install -r apps/ui/requirements.txt
+streamlit run apps/ui/app.py
+```
+
+| Page | Purpose |
+| --- | --- |
+| **Fixtures** | Inspect first-line support, retail, and root-cause analysis conversation fixtures |
+| **Run Evaluation** | Submit `humanity` or full-suite benchmarks for the selected fixture via the EvalHub SDK |
+| **Jobs** | List recent EvalHub jobs and fetch a job by id |
+
+Page-by-page walkthrough, local and OpenShift access, and configuration: **[docs/streamlit-ui-guide.md](docs/streamlit-ui-guide.md)** (also see [apps/ui/README.md](apps/ui/README.md)).
+
 ## Requirements
-
-### Hardware requirements
-
-| Node Type     | Qty | vCPU | Memory (GB) |
-|---------------|-----|------|-------------|
-| Control Plane | 3   | 8    | 16          |
-| Worker        | 2   | 8    | 32          |
-
-> [!NOTE]
-> A GPU is not required for this quickstart
 
 ### Software requirements
 
@@ -206,69 +212,99 @@ make validate
 
 When judge and guardian values are in `.env`, they are applied at install time. To refresh provider settings later without a new run, use `make upgrade-provider`.
 
-### Demo UI
+### Run the first evaluation
 
-The **Gaussia Quickstart Dashboard** is a simple demo UI for browsing scenario fixtures, submitting evaluations to EvalHub, and inspecting jobs. The UI can be accessed using the following steps:
+Submit a humanity-only evaluation against the installed EvalHub service. `make run-humanity` installs the run release, waits for the submit Job and benchmark Job to finish, and prints the run release name.
 
-In the OpenShift web console, go to **Networking** --> **Routes**, and click on the route called **gaussia-ui**.
+> [!NOTE]
+> The default `humanity` benchmark does not require external judge or guardian credentials. It still exercises the full flow: quickstart Job, EvalHub job creation, [Gaussia] provider execution, and MLflow run logging.
 
-![Gaussia evaluation demo UI](docs/images/gaussia-ui.png)
+```bash
+make run-humanity
+```
 
-The UI has three pages:
+Optional overrides:
 
-| Page | Purpose |
+```bash
+make run-humanity FIXTURE=retail RUN_NAME=my-humanity-run
+```
+
+Quickstart submit Job resource overrides:
+
+| Variable | Default |
 | --- | --- |
-| **Fixtures** | Inspect first-line support, retail, and root-cause analysis conversation fixtures |
-| **Run Evaluation** | Submit `Humanity only` or `All benchmarks` for the selected fixture |
-| **Jobs** | List recent EvalHub jobs and fetch a job by id |
+| `JOB_CPU_REQUEST` | `250m` |
+| `JOB_MEMORY_REQUEST` | `512Mi` |
+| `JOB_CPU_LIMIT` | `1` |
+| `JOB_MEMORY_LIMIT` | `1Gi` |
 
-Page-by-page walkthrough, local and OpenShift access, and configuration: **[docs/streamlit-ui-guide.md](docs/streamlit-ui-guide.md)** (also see [apps/ui/README.md](apps/ui/README.md)).
+Available use-cases (fixtures):
 
-#### Fixtures
+| Fixture | Scenario | Interactions |
+| --- | --- | --- |
+| `first-line-support` | IT first-line support troubleshooting | 10 |
+| `retail` | Retail shopping and support assistant | 10 |
+| `root-cause-analysis` | SRE root-cause analysis assistant | 10 |
 
-Select the **Fixtures** page to view the avalable fixtures. You can view the summary of each and their chatbot conversations that will be evaluated by the Gaussia EvalHub provider. Select each one from the drop-down to see the details of each.
+Follow submit logs or re-wait for an existing run:
 
-#### Run evaluations
+```bash
+make logs RUN_NAME=<name-from-run-output>
+make wait-run RUN_NAME=<name>
+```
 
-Select **Run Evalation** page to start running evaluations. The top section will show all of the available benchmarks that can be run. In this demo, there are only two options:
+Use a new `RUN_NAME` for each run, or remove the previous run first: `make uninstall-run RUN_NAME=...`
 
-1. Humanity-only - This evaluation does not require a judge or guardian model
-2. All benchmarks - This evaluation requires both judge and guardia models
+### Run the full benchmark suite
 
-Select your fixture (chatbot conversation to evaluate) and either the benchmark scope, then click the **Submit** button. The output will show the metadata of the job:
+`run-all` runs `upgrade-provider` first, then waits for six benchmarks. Complete [Deploy judge and guardian models](#deploy-judge-and-guardian-models) and fill judge and guardian values in `.env`, then verify:
+
+```bash
+make env-verify-provider    # verify judge and guardian models before run-all
+```
+
+Run all benchmarks (`make run-all` applies provider settings from `.env`, submits the job, and waits for completion):
+
+```bash
+make run-all RUN_NAME=gaussia-evalhub-run-all-$(date +%H%M%S)
+```
+
+Optional overrides: `FIXTURE=retail`, or run provider update separately before a manual re-run:
+
+```bash
+make upgrade-provider
+make run-all RUN_NAME=my-run-all
+```
+
+Expected submit output includes:
 
 ```json
 {
-  "status":"submitted"
-  "job_id":"70ed705b-5110-4922-a54e-cc5cfdddc8dd"
-  "request_name":"gaussia-agent-eval-retail-agent-retail-agent-session-20260720183510-retail-control-20260720183510"
-    "benchmark_ids":[
-     0:"humanity"
-     1:"context"
-     2:"conversational"
-     3:"agentic"
-     4:"bias"
-     5:"toxicity"
+  "status": "submitted",
+  "job_id": "...",
+  "benchmark_ids": [
+    "humanity",
+    "context",
+    "conversational",
+    "agentic",
+    "bias",
+    "toxicity"
   ]
-  "session_id":"retail-agent-session-20260720183510"
-  "stream_id":"retail-stream-20260720183510"
-  "control_id":"retail-control-20260720183510"
 }
 ```
 
-#### View jobs
+### Validate results
 
-Select the **Jobs** page to view the jobs, then click the **Refresh job list** button. The job should show up in the list. While the job is running, the status will show `pending`, then eventually move to `complete`.
+Use these checks to confirm the quickstart completed:
 
-Once it is `complete` copy and paste the Job ID into the `Job ID` box in the **Job detail** section, hit Enter, then click the **Get job** button to see the details and results of the evaluation.
-
-#### Validate results
+```bash
+make validate
+make logs RUN_NAME=<your-run-release>
+```
 
 In EvalHub, confirm that the selected fixture created one top-level job. With `quickstart.benchmarks=auto`, the included fixtures create six benchmark jobs.
 
-You can now also go into MLflow to view the job details and metrics.
-
-In the OpenShift web console, go to **Networking** --> **Routes**, and click on the route called **mlflow**.
+In MLflow, confirm that each benchmark run includes:
 
 - dataset name beginning with `gaussia-`.
 - source name `gaussia.integrations.evalhub.adapter`.
@@ -419,9 +455,11 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 
 ## Tags
 
-- **Title:** Evaluate your fleet of autonomous retail agents
-- **Partner:** Alquimia
-- **Industry:** Retail
-- **Product:** OpenShift AI
-- **Use case:** Evaluation
+- **Title:** Scaling enterprise AI fleets with Gaussia and EvalHub
+- **Description:** Evaluate autonomous agent conversations with repeatable [Gaussia] benchmarks, EvalHub orchestration, and MLflow run history on Red Hat OpenShift AI.
+- **Business challenge:** Adopt and scale AI
+- **Product:** OpenShift AI, OpenShift
+- **Use case:** Agent evaluation, model observability, governance, continuous improvement
 - **Contributor org:** Alquimia AI
+
+[Gaussia]: https://github.com/gaussia-labs/pygaussia
