@@ -93,16 +93,83 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- printf "%s" .Values.platform.provider | toYaml | sha256sum -}}
 {{- end -}}
 
+{{- define "gaussia-evalhub.uiName" -}}
+{{- default "gaussia-ui" .Values.ui.name -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiServiceAccountName" -}}
+{{- default "ocp-api-edit" .Values.ui.serviceAccount.name -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiEnvConfigMapName" -}}
+{{- if .Values.ui.existingEnvConfigMap -}}
+{{- .Values.ui.existingEnvConfigMap -}}
+{{- else -}}
+{{- default (printf "%s-env" (include "gaussia-evalhub.uiName" .)) .Values.ui.envConfigMap -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiImage" -}}
+{{- printf "%s:%s" .Values.ui.image.repository (.Values.ui.image.tag | default .Chart.AppVersion) -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.uiLabels" -}}
+app: {{ include "gaussia-evalhub.uiName" . }}
+app.kubernetes.io/component: {{ include "gaussia-evalhub.uiName" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+{{- end -}}
+
+
+{{- define "gaussia-evalhub.providerSecretName" -}}
+{{- if .Values.platform.provider.existingSecret -}}
+{{- .Values.platform.provider.existingSecret -}}
+{{- else -}}
+{{- printf "%s-provider" (include "gaussia-evalhub.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.providerSecretEnabled" -}}
+{{- if or .Values.platform.provider.existingSecret .Values.platform.provider.judge.apiKey .Values.platform.provider.guardian.apiKey -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+EvalHub provider Jobs only honor env.name/value (valueFrom is dropped).
+Prefer Helm values; when using existingSecret with empty values, look up the Secret.
+*/}}
+{{- define "gaussia-evalhub.judgeApiKey" -}}
+{{- if .Values.platform.provider.judge.apiKey -}}
+{{- .Values.platform.provider.judge.apiKey -}}
+{{- else if .Values.platform.provider.existingSecret -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.platform.provider.existingSecret -}}
+{{- if $secret -}}
+{{- index $secret.data (.Values.platform.provider.judgeApiKeyKey | default "GAUSSIA_JUDGE_API_KEY") | b64dec -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "gaussia-evalhub.guardianApiKey" -}}
+{{- if .Values.platform.provider.guardian.apiKey -}}
+{{- .Values.platform.provider.guardian.apiKey -}}
+{{- else if .Values.platform.provider.existingSecret -}}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace .Values.platform.provider.existingSecret -}}
+{{- if $secret -}}
+{{- index $secret.data (.Values.platform.provider.guardianApiKeyKey | default "GAUSSIA_GUARDIAN_API_KEY") | b64dec -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "gaussia-evalhub.providerEntrypoint" -}}
 export GAUSSIA_JUDGE_MODEL='{{ .Values.platform.provider.judge.model | replace `'` `'\''` }}'
 export GAUSSIA_JUDGE_MODEL_PROVIDER='{{ .Values.platform.provider.judge.modelProvider | replace `'` `'\''` }}'
-export GAUSSIA_JUDGE_API_KEY='{{ .Values.platform.provider.judge.apiKey | replace `'` `'\''` }}'
 export GAUSSIA_JUDGE_BASE_URL='{{ .Values.platform.provider.judge.baseUrl | replace `'` `'\''` }}'
 export GAUSSIA_JUDGE_BOS_JSON_CLAUSE='{{ .Values.platform.provider.judge.bosJsonClause | replace `'` `'\''` }}'
 export GAUSSIA_JUDGE_EOS_JSON_CLAUSE='{{ .Values.platform.provider.judge.eosJsonClause | replace `'` `'\''` }}'
 export GAUSSIA_GUARDIAN_MODEL='{{ .Values.platform.provider.guardian.model | replace `'` `'\''` }}'
 export GAUSSIA_GUARDIAN_TOKENIZER_MODEL='{{ .Values.platform.provider.guardian.tokenizerModel | replace `'` `'\''` }}'
-export GAUSSIA_GUARDIAN_API_KEY='{{ .Values.platform.provider.guardian.apiKey | replace `'` `'\''` }}'
 export GAUSSIA_GUARDIAN_BASE_URL='{{ .Values.platform.provider.guardian.baseUrl | replace `'` `'\''` }}'
 export GAUSSIA_GUARDIAN_CHAT_COMPLETIONS='{{ .Values.platform.provider.guardian.chatCompletions | replace `'` `'\''` }}'
 export GAUSSIA_PROVIDER_PACKAGE_SPEC='{{ .Values.platform.provider.packageSpec | replace `'` `'\''` }}'

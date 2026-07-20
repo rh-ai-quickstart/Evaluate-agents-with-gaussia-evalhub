@@ -6,10 +6,10 @@ Evaluate autonomous agent conversations with repeatable [Gaussia] benchmarks, Ev
 
 - [Detailed description](#detailed-description)
   - [Architecture](#architecture)
+- [Streamlit UI](#streamlit-ui)
 - [Requirements](#requirements)
-  - [Hardware requirements](#hardware-requirements)
-  - [Software requirements](#software-requirements)
-  - [Required user permissions](#required-user-permissions)
+    - [Software requirements](#software-requirements)
+    - [Required user permissions](#required-user-permissions)
 - [Deploy](#deploy)
   - [Deploy judge and guardian models](#deploy-judge-and-guardian-models)
   - [Prepare the quickstart project](#prepare-the-quickstart-project)
@@ -64,11 +64,24 @@ By completing this quickstart, you will:
 3. EvalHub starts the [Gaussia] provider adapter.
 4. The provider evaluates the dataset inside the OpenShift AI environment, reports results to EvalHub, and logs metrics, datasets, sources, and model metadata to MLflow.
 
+## Streamlit UI
+
+The **Gaussia EvalHub** dashboard (`apps/ui/app.py`) is a three-page Streamlit UI for browsing scenario fixtures, submitting evaluations to EvalHub, and inspecting jobs. Run it locally with Streamlit or open the OpenShift Route after `make install` (`ui.enabled=true` by default).
+
+```bash
+pip install -r apps/ui/requirements.txt
+streamlit run apps/ui/app.py
+```
+
+| Page | Purpose |
+| --- | --- |
+| **Fixtures** | Inspect first-line support, retail, and root-cause analysis conversation fixtures |
+| **Run Evaluation** | Submit `humanity` or full-suite benchmarks for the selected fixture via the EvalHub SDK |
+| **Jobs** | List recent EvalHub jobs and fetch a job by id |
+
+Page-by-page walkthrough, local and OpenShift access, and configuration: **[docs/streamlit-ui-guide.md](docs/streamlit-ui-guide.md)** (also see [apps/ui/README.md](apps/ui/README.md)).
+
 ## Requirements
-
-### Hardware requirements
-
-- 
 
 ### Software requirements
 
@@ -118,22 +131,13 @@ Deploy the suggested guardian model:
 5. Enable the external route and token authentication.
 6. Wait until the endpoint is ready, then copy the model route, token, and served model name.
 
-Add the resulting values to `.env`:
+Copy the  `.env.example` to `.env` and ensure that `GAUSSIA_JUDGE_API_KEY` and `GAUSSIA_GUARDIAN_API_KEY` are set.
 
 ```bash
-GAUSSIA_JUDGE_MODEL="<judge-served-model-name>"
-GAUSSIA_JUDGE_MODEL_PROVIDER="openai"
-GAUSSIA_JUDGE_BASE_URL="https://<judge-route>/v1"
-GAUSSIA_JUDGE_API_KEY="<judge-token>"
-GAUSSIA_JUDGE_USE_STRUCTURED_OUTPUT="false"
-GAUSSIA_PROVIDER_PACKAGE_SPEC="gaussia[evalhub]==1.1.0b2 langchain-openai"
-
-GAUSSIA_GUARDIAN_MODEL="<guardian-served-model-name>"
-GAUSSIA_GUARDIAN_TOKENIZER_MODEL="ibm-granite/granite-guardian-3.1-2b"
-GAUSSIA_GUARDIAN_BASE_URL="https://<guardian-route>/v1"
-GAUSSIA_GUARDIAN_API_KEY="<guardian-token>"
-GAUSSIA_GUARDIAN_CHAT_COMPLETIONS="true"
+make env-init
 ```
+
+`GAUSSIA_JUDGE_API_KEY` and `GAUSSIA_GUARDIAN_API_KEY` are set in `.env`. `make install` / `make upgrade-provider` apply them into an OpenShift Secret for the UI, and into the provider ConfigMap for EvalHub Jobs (EvalHub drops `valueFrom` on provider env). To bring your own Secret for the UI, set `platform.provider.existingSecret`.
 
 Set `GAUSSIA_JUDGE_MODEL_PROVIDER` to the LangChain provider that matches your judge endpoint. Use `openai` for OpenShift AI or LiteLLM routes that expose an OpenAI-compatible `/v1` API. Custom served model names such as `llama-scout-17b` require this setting because LangChain cannot infer the provider from the model name alone.
 
@@ -187,7 +191,7 @@ Install the evaluation platform **once** per namespace. This creates EvalHub, th
 Installation creates the namespace when needed (`make namespace`), disables the bundled submit Job (`job.enabled=false`), and waits for EvalHub (`make wait-evalhub`). 
 
 ```bash
-make install               
+make install       
 ```
 
 **Overrides** (append to any install command):
@@ -341,6 +345,7 @@ make run-local FIXTURE=first-line-support
 
 ## References
 
+- [Streamlit UI page guide](docs/streamlit-ui-guide.md)
 - [Troubleshoot this quickstart](docs/troubleshooting.md)
 - [Gaussia documentation](https://github.com/gaussia-labs/pygaussia)
 - [EvalHub provider adapter entrypoint](https://github.com/gaussia-labs/pygaussia)
@@ -426,16 +431,23 @@ Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and
 .
 ├── .env.example           # Environment template (EvalHub, MLflow, judge, guardian)
 ├── Makefile               # Install, run, wait, validate, and uninstall targets
-├── chart/                 # Helm chart for MLflow, EvalHub, provider registration, and quickstart jobs
+├── apps/
+│   ├── ui/                # Streamlit dashboard (see apps/ui/README.md)
+│   │   ├── app.py
+│   │   ├── Containerfile.ui
+│   │   └── requirements.txt
+│   └── evalhub_job_submission/  # Submitter, env checks, run waiter, and scenario fixtures
+│       ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
+│       ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
+│       └── submit_evalhub_job.py
+├── deploy/
+│   └── helm/              # Combined Helm chart (EvalHub, MLflow, provider, UI, jobs)
 ├── docs/                  # Architecture images and documentation
 │   ├── gaussia-metric-families.md  # Available Gaussia benchmarks and metrics
 │   ├── how-it-works.md    # What is deployed, run, and evaluated
 │   ├── manual-helm-install.md  # Manual Helm installation commands
+│   ├── streamlit-ui-guide.md   # Streamlit page-by-page walkthrough
 │   └── troubleshooting.md # Common issues and solutions
-├── quickstart/            # Submitter, env checks, run waiter, and scenario fixtures
-│   ├── check_env.py       # Inspect and verify .env (make env-show, env-verify-*)
-│   ├── wait_run.py        # Wait for submit and benchmark jobs (make wait-run)
-│   └── submit_evalhub_job.py
 └── README.md              # Red Hat AI quickstart guide
 ```
 

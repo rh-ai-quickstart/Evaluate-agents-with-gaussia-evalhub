@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-CHART_DIR          ?= ./chart
+CHART_DIR          ?= ./deploy/helm
 RELEASE            ?= gaussia-evalhub
 NAMESPACE          ?= gaussia-evalhub-quickstart
 MLFLOW_NAMESPACE   ?= redhat-ods-applications
@@ -17,6 +17,13 @@ JOB_CPU_LIMIT      ?= 2000m
 JOB_MEMORY_LIMIT   ?= 2Gi
 
 RUN_NAME ?= gaussia-evalhub-run-$(shell date +%Y%m%d%H%M%S)
+
+# Streamlit UI image (matches deploy/helm ui.image defaults).
+# podman pull quay.io/rh-ai-quickstart/alquimia-streamlit-ui
+UI_IMAGE         ?= quay.io/rh-ai-quickstart/alquimia-streamlit-ui
+UI_TAG           ?= 0.1.0
+UI_CONTAINERFILE ?= apps/ui/Containerfile.ui
+UI_DEPLOYMENT    ?= gaussia-ui
 
 # Source .env for helm/oc recipes (matches README: set -a; source .env; set +a).
 define with_env
@@ -37,6 +44,7 @@ HELM_SHARED_MLFLOW_SETS := \
 	--set platform.mlflow.rbacNamespace="$(NAMESPACE)"
 
 # Helm --set-string flags for judge/guardian provider settings sourced from .env.
+# API keys are stored in an OpenShift Secret by the chart (not in ConfigMaps).
 HELM_PROVIDER_SETS := \
 	--set-string platform.provider.packageSpec="$${GAUSSIA_PROVIDER_PACKAGE_SPEC:-gaussia[evalhub]==1.1.0b2 langchain-openai}" \
 	--set-string platform.provider.judge.model="$${GAUSSIA_JUDGE_MODEL}" \
@@ -63,7 +71,8 @@ HELM_PROVIDER_SETS := \
 	wait-evalhub upgrade-provider wait-run \
 	run-humanity run-all validate logs \
 	list-releases uninstall-run uninstall cleanup-namespace \
-	run-local install-external
+	run-local install-external \
+	build-ui push-ui restart-ui ui
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make [target]\n\nTargets:\n"} \
@@ -80,6 +89,8 @@ help: ## Show available targets
 	@echo "  JOB_MEMORY_REQUEST=$(JOB_MEMORY_REQUEST)"
 	@echo "  JOB_CPU_LIMIT=$(JOB_CPU_LIMIT)"
 	@echo "  JOB_MEMORY_LIMIT=$(JOB_MEMORY_LIMIT)"
+	@echo "  UI_IMAGE=$(UI_IMAGE)"
+	@echo "  UI_TAG=$(UI_TAG)"
 
 ##@ Setup
 
@@ -92,13 +103,13 @@ env-check: ## Ensure .env exists (creates from .env.example when missing)
 	@test -f .env || (echo "Missing .env — run: make env-init" && exit 1)
 
 env-show: env-check ## Show variables loaded from .env (secrets masked)
-	@$(call with_env,python3 quickstart/check_env.py show)
+	@$(call with_env,python3 apps/evalhub_job_submission/check_env.py show)
 
 env-verify-provider: env-check ## Fail if judge/guardian .env values are missing or placeholders
-	@$(call with_env,python3 quickstart/check_env.py verify-provider)
+	@$(call with_env,python3 apps/evalhub_job_submission/check_env.py verify-provider)
 
 env-verify-external: env-check ## Fail if external EvalHub .env values are missing or placeholders
-	@$(call with_env,python3 quickstart/check_env.py verify-external)
+	@$(call with_env,python3 apps/evalhub_job_submission/check_env.py verify-external)
 
 namespace: env-check ## Create or select the OpenShift project
 	@oc get project "$(NAMESPACE)" >/dev/null 2>&1 || oc new-project "$(NAMESPACE)"
@@ -153,7 +164,7 @@ upgrade-provider: env-check env-verify-provider ## Apply judge/guardian settings
 
 wait-run: ## Wait for a run submit job and EvalHub benchmark jobs (set RUN_NAME)
 	@test "$(origin RUN_NAME)" != "file" || (echo "Set RUN_NAME, e.g. make wait-run RUN_NAME=gaussia-evalhub-run-all-120000" && exit 1)
-	@python3 quickstart/wait_run.py --namespace "$(NAMESPACE)" --run-name "$(RUN_NAME)"
+	@python3 apps/evalhub_job_submission/wait_run.py --namespace "$(NAMESPACE)" --run-name "$(RUN_NAME)"
 
 ##@ Evaluation runs
 
@@ -161,6 +172,7 @@ run-humanity:
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set ui.enabled=false \
 		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=humanity \
@@ -178,6 +190,7 @@ run-all:
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set ui.enabled=false \
 		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=auto \
@@ -195,6 +208,7 @@ install-external: env-check env-verify-external namespace ## Job-only install ag
 	@$(call with_env,helm install "$(RUN_NAME)" "$(CHART_DIR)" \
 		--namespace "$(NAMESPACE)" \
 		--set platform.enabled=false \
+		--set ui.enabled=false \
 		--set mlflow.create=false \
 		--set quickstart.fixture="$(FIXTURE)" \
 		--set quickstart.benchmarks=auto \
@@ -213,10 +227,24 @@ run-local: env-check env-verify-external ## Submit a job from your workstation w
 	@$(call with_env,uv run \
 		--with "gaussia[evalhub]" \
 		--with "eval-hub-sdk[client]==0.1.5" \
-		python quickstart/submit_evalhub_job.py \
-		--fixture "quickstart/fixtures/$(FIXTURE).json" \
+		python apps/evalhub_job_submission/submit_evalhub_job.py \
+		--fixture "apps/evalhub_job_submission/fixtures/$(FIXTURE).json" \
 		--benchmarks auto \
 		--unique-run)
+
+##@ UI
+
+build-ui: ## Build the Streamlit UI container image with podman
+	podman build -f "$(UI_CONTAINERFILE)" -t "$(UI_IMAGE):$(UI_TAG)" .
+
+push-ui: ## Push the UI container image to the registry
+	podman push "$(UI_IMAGE):$(UI_TAG)"
+
+restart-ui: ## Restart the UI deployment on OpenShift
+	oc rollout restart "deploy/$(UI_DEPLOYMENT)" -n "$(NAMESPACE)"
+	oc rollout status "deploy/$(UI_DEPLOYMENT)" -n "$(NAMESPACE)"
+
+ui: build-ui push-ui restart-ui ## Build, push, and restart the UI container
 
 ##@ Verify and clean up
 

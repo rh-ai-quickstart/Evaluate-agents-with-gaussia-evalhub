@@ -212,7 +212,7 @@ data:
           - name: GAUSSIA_JUDGE_MODEL_PROVIDER
             value: {{ .Values.platform.provider.judge.modelProvider | quote }}
           - name: GAUSSIA_JUDGE_API_KEY
-            value: {{ .Values.platform.provider.judge.apiKey | quote }}
+            value: {{ include "gaussia-evalhub.judgeApiKey" . | quote }}
           - name: GAUSSIA_JUDGE_BASE_URL
             value: {{ .Values.platform.provider.judge.baseUrl | quote }}
           - name: GAUSSIA_JUDGE_MODEL_PROVIDER
@@ -236,7 +236,7 @@ data:
           - name: GAUSSIA_GUARDIAN_TOKENIZER_MODEL
             value: {{ .Values.platform.provider.guardian.tokenizerModel | quote }}
           - name: GAUSSIA_GUARDIAN_API_KEY
-            value: {{ .Values.platform.provider.guardian.apiKey | quote }}
+            value: {{ include "gaussia-evalhub.guardianApiKey" . | quote }}
           - name: GAUSSIA_GUARDIAN_BASE_URL
             value: {{ .Values.platform.provider.guardian.baseUrl | quote }}
           - name: GAUSSIA_GUARDIAN_TEMPERATURE
@@ -369,6 +369,9 @@ spec:
       {{- if .Values.platform.provider.enabled }}
       annotations:
         checksum/evalhub-providers: {{ include "gaussia-evalhub.providersChecksum" . }}
+        {{- if and (not .Values.platform.provider.existingSecret) (or .Values.platform.provider.judge.apiKey .Values.platform.provider.guardian.apiKey) }}
+        checksum/provider-secret: {{ include (print $.Template.BasePath "/provider-secret.yaml") . | sha256sum }}
+        {{- end }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "gaussia-evalhub.platformServiceAccountName" . }}

@@ -1,0 +1,20 @@
+FROM registry.redhat.io/ubi10/python-314-minimal:1783485502
+
+USER 0
+
+WORKDIR /opt/app-root/src
+
+COPY apps/ui/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
+
+COPY apps/evalhub_job_submission/ apps/evalhub_job_submission/
+COPY apps/ui/ apps/ui/
+
+WORKDIR /opt/app-root/src/apps/ui
+
+USER 1001
+
+EXPOSE 8501
+
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

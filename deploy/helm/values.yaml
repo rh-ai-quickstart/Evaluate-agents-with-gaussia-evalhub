@@ -43,6 +43,7 @@ platform:
     artifactsDestination: "file:///mlflow/artifacts"
     serveArtifacts: true
     trackingUri: ""
+    trackingToken: ""
     workspace: ""
     rbacNamespace: ""
     insecureSkipVerify: true
@@ -84,6 +85,10 @@ platform:
     packageSpec: "gaussia[evalhub]==1.1.0b2 langchain-openai"
     evalhubSdkSpec: "eval-hub-sdk[adapter]==0.1.5"
     cacheRoot: /tmp/gaussia-cache
+    # Chart creates a Secret from judge/guardian apiKey unless existingSecret is set.
+    existingSecret: ""
+    judgeApiKeyKey: GAUSSIA_JUDGE_API_KEY
+    guardianApiKeyKey: GAUSSIA_GUARDIAN_API_KEY
     resources:
       requests:
         cpu: 500m
@@ -141,6 +146,25 @@ mlflow:
     backendStoreUri: "sqlite:////mlflow/mlflow.db"
     serveArtifacts: true
 
+
+ui:
+  enabled: true
+  replicaCount: 1
+  name: gaussia-ui
+  image:
+    repository: quay.io/rh-ai-quickstart/alquimia-streamlit-ui
+    tag: "0.1.0"
+    pullPolicy: Always
+  # Created by the chart unless existingEnvConfigMap is set.
+  envConfigMap: ""
+  existingEnvConfigMap: ""
+  serviceAccount:
+    create: true
+    name: ocp-api-edit
+  route:
+    enabled: true
+  service:
+    port: 8501
 
 extraEnv: {}
 podAnnotations: {}
