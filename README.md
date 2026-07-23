@@ -44,14 +44,14 @@ Teams need a repeatable way to answer practical release and governance questions
 - Which model or agent version produced the evaluated conversation?
 - Did the agent introduce attribute-level bias, toxic language, or harmful associations that simple keyword filters would miss?
 
-This AI quickstart helps platform, product, and model teams measure autonomous agent quality before agent updates reach production. It uses [Gaussia] as the evaluation provider, EvalHub as the job orchestration layer, and MLflow as the metrics and run history backend. For details on available [Gaussia] metric families and benchmarks, see [Gaussia metric families](docs/gaussia-metric-families.md).
+This AI quickstart helps platform, product, and model teams measure autonomous agent quality before agent updates reach production. It uses Gaussia as the evaluation provider, EvalHub as the job orchestration layer, and MLflow as the metrics and run history backend. For details on available Gaussia metric families and benchmarks, see [Gaussia metric families](docs/gaussia-metric-families.md).
 
 The included scenarios evaluate agents in first-line support, retail assistance, and root-cause analysis workflows. The same pattern applies to IT service desk agents, incident response assistants, customer support agents, and internal operations agents running as part of a larger enterprise AI fleet.
 
 
 By completing this quickstart, you will:
 
-- Deploy a namespace-scoped Red Hat OpenShift AI&reg; evaluation stack with MLflow, EvalHub, the [Gaussia] provider registration, and quickstart Jobs.
+- Deploy a namespace-scoped Red Hat OpenShift AI&reg; evaluation stack with MLflow, EvalHub, the Gaussia provider registration, and quickstart Jobs.
 - Submit deterministic agent conversation fixtures as EvalHub jobs without relying on a pre-existing EvalHub service.
 - Run the included scenario fixtures with three default benchmarks or six benchmarks when `quickstart.benchmarks=auto`.
 - Confirm EvalHub benchmark fan-out and MLflow metric tracking for evaluated agent versions, datasets, and metric families.
@@ -62,9 +62,9 @@ By completing this quickstart, you will:
 
 **Flow summary:**
 
-1. The quickstart loads a public agent conversation fixture as a [Gaussia]-compatible dataset.
-2. The quickstart submits an EvalHub job with one benchmark entry per selected [Gaussia] metric family.
-3. EvalHub starts the [Gaussia] provider adapter.
+1. The quickstart loads a public agent conversation fixture as a Gaussia-compatible dataset.
+2. The quickstart submits an EvalHub job with one benchmark entry per selected Gaussia metric family.
+3. EvalHub starts the Gaussia provider adapter.
 4. The provider evaluates the dataset inside the OpenShift AI environment, reports results to EvalHub, and logs metrics, datasets, sources, and model metadata to MLflow.
 
 ## Requirements
@@ -102,7 +102,13 @@ For an overview of the install, Kubernetes jobs, and expected MLflow output, see
 
 ### Prepare the quickstart project
 
-You will need judge and guardian models to run the full suite of benchmarks. If you have existing model endpoints to use, then set them in the `.env` file as discussed below. If you will be serving the models locally in OpenShift AI you can follow the instructions in the [Deploy judge and guardian models](docs/judge-and-guardian-models.md) file.
+When evaluating agentic chat conversations, judge and guardian models are often used, so it is important to understand what they offer.
+
+* **Judge model** — An LLM endpoint used by certain Gaussia benchmarks to score agent conversations on qualitative dimensions like context retention, conversational quality, and agentic accuracy. It acts as an AI grader that reads the conversation and produces metric scores.
+
+* **Guardian model** — An LLM endpoint used by safety-oriented benchmarks (bias, toxicity) to detect harmful content, demographic assumptions, toxic language, or unsafe associations in agent responses that simple keyword filters would miss.
+
+While those models are not required for the `humanity-only` evaluation, you will need judge and guardian models to run the full suite of benchmarks. If you have existing model endpoints to use, then set them in the `.env` file as discussed below. If you will be serving the models locally in OpenShift AI you can follow the instructions in the [Deploy judge and guardian models](docs/judge-and-guardian-models.md) file.
 
 Clone the repository:
 
@@ -143,7 +149,7 @@ Optional override: `make namespace NAMESPACE=my-eval-namespace`
 
 ### Install the evaluation platform
 
-Install the evaluation platform **once** per namespace. This creates EvalHub, the [Gaussia] provider registration, and MLflow connectivity. Evaluation jobs are separate Helm releases installed in the next steps.
+Install the evaluation platform **once** per namespace. This creates EvalHub, the Gaussia provider registration, and MLflow connectivity. Evaluation jobs are separate Helm releases installed in the next steps.
 
 Installation creates the namespace when needed (`make namespace`), disables the bundled submit Job (`job.enabled=false`), and waits for EvalHub (`make wait-evalhub`). 
 
@@ -257,8 +263,7 @@ make cleanup-namespace   # optional; deletes the OpenShift project
 
 - [Streamlit UI page guide](docs/streamlit-ui-guide.md)
 - [Troubleshoot this quickstart](docs/troubleshooting.md)
-- [Gaussia documentation](https://github.com/gaussia-labs/pygaussia)
-- [EvalHub provider adapter entrypoint](https://github.com/gaussia-labs/pygaussia)
+- [Gaussia (EvalHub provider) documentation](https://github.com/gaussia-labs/pygaussia)
 - [Red Hat AI quickstarts catalog](https://docs.redhat.com/en/learn/ai-quickstarts)
 
 ## Technical details
@@ -303,17 +308,17 @@ When every interaction includes `ground_truth_assistant`, it also includes:
 
 - `agentic`
 
-Use `make run-humanity` when you want the full EvalHub, [Gaussia], and MLflow flow without judge or guardian credentials.
+Use `make run-humanity` when you want the full EvalHub, Gaussia, and MLflow flow without judge or guardian credentials.
 
 ### Provider registration
 
-The Helm chart registers the [Gaussia] provider in EvalHub with provider id `gaussia` and this adapter command:
+The Helm chart registers the Gaussia provider in EvalHub with provider id `gaussia` and this adapter command:
 
 ```bash
 python -m gaussia.integrations.evalhub.adapter
 ```
 
-The provider container runs the [Gaussia] EvalHub adapter with:
+The provider container runs the Gaussia EvalHub adapter with:
 
 ```bash
 python -m gaussia.integrations.evalhub.adapter
@@ -321,7 +326,7 @@ python -m gaussia.integrations.evalhub.adapter
 
 The chart pins the EvalHub deployment and sidecar to an immutable `docker.io/alquimiaai/eval-hub` digest through `platform.evalhub.image.fullReference`. Clear that value only when you intentionally want to use the mutable `platform.evalhub.image.repository` and `platform.evalhub.image.tag` fallback.
 
-By default, the chart uses `docker.io/alquimiaai/gaussia-provider:1.1.0b2`, pinned to its published digest, which includes the [Gaussia] EvalHub adapter and CPU-only Torch dependencies. It also pins `gaussia[evalhub]==1.1.0b2` at startup so benchmark dependencies stay explicit.
+By default, the chart uses `docker.io/alquimiaai/gaussia-provider:1.1.0b2`, pinned to its published digest, which includes the Gaussia EvalHub adapter and CPU-only Torch dependencies. It also pins `gaussia[evalhub]==1.1.0b2` at startup so benchmark dependencies stay explicit.
 Override `platform.provider.packageSpec` when the provider pod needs extra LangChain connector packages, such as `langchain-litellm` for LiteLLM. Set `platform.provider.judge.modelProvider` when LangChain cannot infer the provider from the model name.
 Override `platform.provider.evalhubSdkSpec` only when you want the provider pod to install a different EvalHub adapter SDK at startup.
 Use `platform.provider.image.fullReference` when you need to pin the provider to an internal image registry digest.
@@ -335,7 +340,7 @@ export GAUSSIA_EVALUATED_MODEL_NAME="custom-agent-demo-v1"
 export GAUSSIA_EVALUATED_MODEL_URL="https://example.invalid/models/custom-agent-demo-v1"
 ```
 
-Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and `MLFLOW_*` environment variable names used by the [Gaussia] EvalHub provider.
+Judge, guardian, agentic, toxicity, and MLflow settings keep the `GAUSSIA_*` and `MLFLOW_*` environment variable names used by the Gaussia EvalHub provider.
 
 ### Repository structure
 
