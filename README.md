@@ -1,6 +1,6 @@
 # Evaluate your fleet of autonomous retail agents
 
-Evaluate retail chatbot conversations with repeatable benchmarks, orchestration, and run history before they go into production with Guassia from Alquimia&reg;.
+Evaluate retail agent chatbot conversations with Guassia&reg;, from Alquimia&reg;, before they go into production.
 
 ## Table of contents
 
