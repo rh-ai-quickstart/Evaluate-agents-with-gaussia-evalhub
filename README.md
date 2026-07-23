@@ -1,6 +1,6 @@
 # Evaluate your fleet of autonomous retail agents
 
-Evaluate autonomous retail agent conversations with repeatable benchmarks, EvalHub orchestration, and MLflow run history before they go into production.
+Evaluate retail chatbot conversations with repeatable benchmarks, orchestration, and run history before they go into production with Guassia from Alquimia&reg;.
 
 ## Table of contents
 
@@ -11,7 +11,6 @@ Evaluate autonomous retail agent conversations with repeatable benchmarks, EvalH
   - [Software requirements](#software-requirements)
   - [Required user permissions](#required-user-permissions)
 - [Deploy](#deploy)
-  - [Deploy judge and guardian models](#deploy-judge-and-guardian-models)
   - [Prepare the quickstart project](#prepare-the-quickstart-project)
   - [Install the evaluation platform](#install-the-evaluation-platform)
   - [Demo UI](#demo-ui)
@@ -20,7 +19,6 @@ Evaluate autonomous retail agent conversations with repeatable benchmarks, EvalH
     - [View jobs](#view-jobs)
     - [Validate results](#validate-results)
   - [Delete](#delete)
-  - [Optional - Use existing EvalHub and MLflow](#optional---use-existing-evalhub-and-mlflow)
 - [References](#references)
 - [Technical details](#technical-details)
   - [Payload contract](#payload-contract)
@@ -49,7 +47,7 @@ The included scenarios evaluate agents in first-line support, retail assistance,
 
 By completing this quickstart, you will:
 
-- Deploy a namespace-scoped OpenShift AI evaluation stack with MLflow, EvalHub, the [Gaussia] provider registration, and quickstart Jobs.
+- Deploy a namespace-scoped Red Hat OpenShift AI&reg; evaluation stack with MLflow, EvalHub, the [Gaussia] provider registration, and quickstart Jobs.
 - Submit deterministic agent conversation fixtures as EvalHub jobs without relying on a pre-existing EvalHub service.
 - Run the included scenario fixtures with three default benchmarks or six benchmarks when `quickstart.benchmarks=auto`.
 - Confirm EvalHub benchmark fan-out and MLflow metric tracking for evaluated agent versions, datasets, and metric families.
@@ -100,7 +98,7 @@ For an overview of the install, Kubernetes jobs, and expected MLflow output, see
 
 ### Prepare the quickstart project
 
-You will need judge and guardian models to run the full suite of benchmarks. You can set the existing model endpoints in the `.env` file as discussed below. If you will be serving the models locally in OpenShift AI you can follow the instructions in the [Deploy judge and guardian models](docs/judge-and-guardian-models.md) file.
+You will need judge and guardian models to run the full suite of benchmarks. If you have existing model endpoints to use, then set them in the `.env` file as discussed below. If you will be serving the models locally in OpenShift AI you can follow the instructions in the [Deploy judge and guardian models](docs/judge-and-guardian-models.md) file.
 
 Clone the repository:
 
