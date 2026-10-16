@@ -22,7 +22,7 @@ Deploy the suggested judge model:
 
 Deploy the suggested guardian model:
 
-1. Download the model artifacts and upload them to S3-compatible object storage, such as MinIO.
+1. Download the model artifacts and upload them to S3-compatible object storage.
 2. In the OpenShift AI project, create an S3-compatible data connection that points to the bucket and path containing the guardian model.
 3. Deploy a model from the existing data connection and set model type to `Generative AI model (Example: LLM)`.
 4. Use a vLLM/KServe serving runtime with a GPU-capable hardware profile.
